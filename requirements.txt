@@ -1,0 +1,8 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==1.12.1+cpu
+matplotlib
+numpy
+pandas
+jupyterlab
+scikit-learn
+git+https://github.com/FlowModelingControl/flowtorch.git@aweiner
