@@ -29,16 +29,6 @@ def set_seed(seed_value=42):
 
 def split_dataset(data):
     
-
-    # Example DataFrame
-    # data = {
-    #     'feature1': [10, 20, 30, 40, 50, 60],
-    #     'feature2': [100, 200, 300, 400, 500, 600],
-    #     'label': [0, 1, 0, 1, 0, 1]
-    # }
-    # df = pd.DataFrame(data)
-
-
   # Split train data into smaller train and validation sets
     train_split, val_split = train_test_split(data, test_size=0.2, random_state=42)
 
@@ -92,15 +82,6 @@ def set_seed(seed_value=42):
 
 
 def split_dataset(data):
-    
-
-    # Example DataFrame
-    # data = {
-    #     'feature1': [10, 20, 30, 40, 50, 60],
-    #     'feature2': [100, 200, 300, 400, 500, 600],
-    #     'label': [0, 1, 0, 1, 0, 1]
-    # }
-    # df = pd.DataFrame(data)
 
 
   # Split train data into smaller train and validation sets

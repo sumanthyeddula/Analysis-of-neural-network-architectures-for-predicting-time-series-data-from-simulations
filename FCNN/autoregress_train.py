@@ -1,115 +1,11 @@
 import torch as pt
 from FCNN import FCNNModel
 from autoregress_func import autoregressive_func
-
-
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
-
 import pandas as pd
-
-
-
 from utils import save_model
 from plots import plot_loss
-
-
-
-
-
-# def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_length, optimizer, criterion, batch_size, save_path): 
-#     print("********************************************************* Code starts")
-
-#     for epoch in range(n_epochs):
-#         # Initialize epoch loss for training and validation
-#         train_loss = 0
-#         val_loss = 0
-
-#         # Shuffle train_Data for each epoch to improve generalization
-#         np.random.shuffle(train_Data)
-
-#         # Training phase
-#         model.train()
-#         for batch_start in range(0, len(train_Data), batch_size):  # Loop through batches
-#             batch = train_Data[batch_start:batch_start + batch_size]
-#             batch_loss = 0
-
-#             for i, sequence in enumerate(batch):  # Loop through sequences in the batch
-#                 dataframe = sequence[0]
-
-#                 # Extract the last column for rotational speed
-#                 rotational_Speed = dataframe[:, -1]
-#                 rotational_Speed = pd.DataFrame(rotational_Speed, columns=['last_column'])
-
-#                 # Skip sequences with unexpected shapes or lengths
-#                 if dataframe.shape[1] != n_features:
-#                     print(f"Skipping train sequence {batch_start + i} due to unexpected feature size.")
-#                     continue
-#                 if dataframe.shape[0] < sequence_length + n_steps:
-#                     print(f"Skipping train sequence {batch_start + i} due to insufficient length.")
-#                     continue
-
-#                 # Prepare input and target data
-#                 initial_input = dataframe[0:sequence_length]
-#                 target_data = dataframe[sequence_length:sequence_length + n_steps, :14]
-
-#                 # Normalize input
-#                 scaler = MinMaxScaler()
-#                 normalized_input = scaler.fit_transform(initial_input)
-#                 normalized_input_tensor = pt.tensor(normalized_input, dtype=pt.float32).view(1, sequence_length, n_features)
-
-#                 # Convert target data to PyTorch tensor
-#                 target_data = pt.tensor(target_data, dtype=pt.float32)
-
-#                 # Train the model on the current sequence using autoregressive approach
-#                 avg_loss = autoregressive_func(model, normalized_input_tensor, target_data, n_steps, optimizer, criterion, rotational_Speed, sequence_length, is_training=True)
-#                 batch_loss += avg_loss
-#             print(len(batch))
-#             # Average loss for the batch
-#             train_loss += batch_loss / len(batch)
-
-#         # Validation phase
-#         model.eval()  # Set model to evaluation mode
-#         with pt.no_grad():  # No gradients required during validation
-#             for i in range(len(val_Data)):  # Loop through val_Data sequences
-#                 dataframe = val_Data[i][0]
-
-#                 # Extract the last column for rotational speed
-#                 rotational_Speed = dataframe[:, -1]
-#                 rotational_Speed = pd.DataFrame(rotational_Speed, columns=['last_column'])
-
-#                 # Skip sequences with unexpected shapes or lengths
-#                 if dataframe.shape[1] != n_features:
-#                     print(f"Skipping validation sequence {i} due to unexpected feature size.")
-#                     continue
-#                 if dataframe.shape[0] < sequence_length + n_steps:
-#                     print(f"Skipping validation sequence {i} due to insufficient length.")
-#                     continue
-
-#                 # Prepare input and target data
-#                 initial_input = dataframe[0:sequence_length]
-#                 target_data = dataframe[sequence_length:sequence_length + n_steps, :14]
-
-#                 # Normalize input
-#                 scaler = MinMaxScaler()
-#                 normalized_input = scaler.fit_transform(initial_input)
-#                 normalized_input_tensor = pt.tensor(normalized_input, dtype=pt.float32).view(1, sequence_length, n_features)
-
-#                 # Convert target data to PyTorch tensor
-#                 target_data = pt.tensor(target_data, dtype=pt.float32)
-
-#                 # Calculate loss on validation data
-#                 avg_loss = autoregressive_func(model, normalized_input_tensor, target_data, n_steps, optimizer, criterion, rotational_Speed, sequence_length, is_training=False)
-#                 val_loss += avg_loss
-
-#         # Average losses for the epoch
-#         train_loss /= len(train_Data)
-#         val_loss /= len(val_Data)
-        
-#         print(f"Epoch [{epoch+1}/{n_epochs}] -> Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}")
-
-#         save_model(model, f"{save_path}_epoch_{epoch+1}.pth")
-
 
 def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_length, optimizer, criterion, batch_size, save_path): 
     print("********************************************************* Code starts")
@@ -348,115 +244,11 @@ def test(
 import torch as pt
 from FCNN import FCNNModel
 from autoregress_func import autoregressive_func
-
-
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
-
 import pandas as pd
-
-
-
 from utils import save_model
 from plots import plot_loss
-
-
-
-
-
-# def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_length, optimizer, criterion, batch_size, save_path): 
-#     print("********************************************************* Code starts")
-
-#     for epoch in range(n_epochs):
-#         # Initialize epoch loss for training and validation
-#         train_loss = 0
-#         val_loss = 0
-
-#         # Shuffle train_Data for each epoch to improve generalization
-#         np.random.shuffle(train_Data)
-
-#         # Training phase
-#         model.train()
-#         for batch_start in range(0, len(train_Data), batch_size):  # Loop through batches
-#             batch = train_Data[batch_start:batch_start + batch_size]
-#             batch_loss = 0
-
-#             for i, sequence in enumerate(batch):  # Loop through sequences in the batch
-#                 dataframe = sequence[0]
-
-#                 # Extract the last column for rotational speed
-#                 rotational_Speed = dataframe[:, -1]
-#                 rotational_Speed = pd.DataFrame(rotational_Speed, columns=['last_column'])
-
-#                 # Skip sequences with unexpected shapes or lengths
-#                 if dataframe.shape[1] != n_features:
-#                     print(f"Skipping train sequence {batch_start + i} due to unexpected feature size.")
-#                     continue
-#                 if dataframe.shape[0] < sequence_length + n_steps:
-#                     print(f"Skipping train sequence {batch_start + i} due to insufficient length.")
-#                     continue
-
-#                 # Prepare input and target data
-#                 initial_input = dataframe[0:sequence_length]
-#                 target_data = dataframe[sequence_length:sequence_length + n_steps, :14]
-
-#                 # Normalize input
-#                 scaler = MinMaxScaler()
-#                 normalized_input = scaler.fit_transform(initial_input)
-#                 normalized_input_tensor = pt.tensor(normalized_input, dtype=pt.float32).view(1, sequence_length, n_features)
-
-#                 # Convert target data to PyTorch tensor
-#                 target_data = pt.tensor(target_data, dtype=pt.float32)
-
-#                 # Train the model on the current sequence using autoregressive approach
-#                 avg_loss = autoregressive_func(model, normalized_input_tensor, target_data, n_steps, optimizer, criterion, rotational_Speed, sequence_length, is_training=True)
-#                 batch_loss += avg_loss
-#             print(len(batch))
-#             # Average loss for the batch
-#             train_loss += batch_loss / len(batch)
-
-#         # Validation phase
-#         model.eval()  # Set model to evaluation mode
-#         with pt.no_grad():  # No gradients required during validation
-#             for i in range(len(val_Data)):  # Loop through val_Data sequences
-#                 dataframe = val_Data[i][0]
-
-#                 # Extract the last column for rotational speed
-#                 rotational_Speed = dataframe[:, -1]
-#                 rotational_Speed = pd.DataFrame(rotational_Speed, columns=['last_column'])
-
-#                 # Skip sequences with unexpected shapes or lengths
-#                 if dataframe.shape[1] != n_features:
-#                     print(f"Skipping validation sequence {i} due to unexpected feature size.")
-#                     continue
-#                 if dataframe.shape[0] < sequence_length + n_steps:
-#                     print(f"Skipping validation sequence {i} due to insufficient length.")
-#                     continue
-
-#                 # Prepare input and target data
-#                 initial_input = dataframe[0:sequence_length]
-#                 target_data = dataframe[sequence_length:sequence_length + n_steps, :14]
-
-#                 # Normalize input
-#                 scaler = MinMaxScaler()
-#                 normalized_input = scaler.fit_transform(initial_input)
-#                 normalized_input_tensor = pt.tensor(normalized_input, dtype=pt.float32).view(1, sequence_length, n_features)
-
-#                 # Convert target data to PyTorch tensor
-#                 target_data = pt.tensor(target_data, dtype=pt.float32)
-
-#                 # Calculate loss on validation data
-#                 avg_loss = autoregressive_func(model, normalized_input_tensor, target_data, n_steps, optimizer, criterion, rotational_Speed, sequence_length, is_training=False)
-#                 val_loss += avg_loss
-
-#         # Average losses for the epoch
-#         train_loss /= len(train_Data)
-#         val_loss /= len(val_Data)
-        
-#         print(f"Epoch [{epoch+1}/{n_epochs}] -> Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}")
-
-#         save_model(model, f"{save_path}_epoch_{epoch+1}.pth")
-
 
 def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_length, optimizer, criterion, batch_size, save_path): 
     print("********************************************************* Code starts")
