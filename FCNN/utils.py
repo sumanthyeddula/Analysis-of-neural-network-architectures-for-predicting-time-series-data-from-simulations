@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import torch as pt
 import numpy as np
 import random
@@ -63,7 +62,6 @@ def save_model(model, file_path):
     pt.save(model.state_dict(), file_path)
     print(f"Model saved to {file_path}")
 
-=======
 import torch as pt
 import numpy as np
 import random
@@ -128,4 +126,3 @@ def save_model(model, file_path):
     pt.save(model.state_dict(), file_path)
     print(f"Model saved to {file_path}")
 
->>>>>>> 10a8ac84e53d92c691fa9cc1d84ec25d63c6d803

@@ -1,4 +1,3 @@
-
 import torch as pt
 
 # def autoregressive_func(model, initial_input, target_data, n_steps, optimizer, criterion, rotational_speed_list, sequence_length, is_training=True):

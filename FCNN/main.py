@@ -197,9 +197,4 @@ if __name__ == "__main__":
 
         train(model, n_epochs, n_steps, n_features, train_data, val_data, sequence_length, optimizer, criterion, batch_size= batch_Size, save_path=save_path)
 
-        print("Training complete.")
-
-
-
->>>>>>> 10a8ac84e53d92c691fa9cc1d84ec25d63c6d803
-    
+        print("Training complete.")  

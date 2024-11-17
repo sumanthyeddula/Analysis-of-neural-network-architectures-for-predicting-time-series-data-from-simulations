@@ -183,4 +183,3 @@ def plot_dataframe_columns(labels_data, prediction_data, save_dir=None):
             print(f"Plot for column '{column}' saved to {save_dir}/{column}_plot.png")
         
         plt.show()
->>>>>>> 10a8ac84e53d92c691fa9cc1d84ec25d63c6d803

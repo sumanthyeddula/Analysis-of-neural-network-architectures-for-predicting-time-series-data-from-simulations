@@ -273,5 +273,4 @@ if __name__ == "__main__":
     predictions = autoregressive_predict(model, input_1, n_steps, all_dataframes)
 
     # Print the predictions
->>>>>>> 10a8ac84e53d92c691fa9cc1d84ec25d63c6d803
     print("Autoregressive predictions:", predictions)

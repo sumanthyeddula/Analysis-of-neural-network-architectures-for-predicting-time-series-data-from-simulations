@@ -691,4 +691,3 @@ def test(
     avg_test_loss = total_loss / (1 if test_single else (len(test_Data) // batch_size))
 
     return avg_test_loss, all_predictions, all_actuals
->>>>>>> 10a8ac84e53d92c691fa9cc1d84ec25d63c6d803
