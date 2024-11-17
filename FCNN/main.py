@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import torch as pt
 from FCNN import FCNNModel
 import sys
