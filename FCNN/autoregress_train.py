@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import torch as pt
 from FCNN import FCNNModel
 from autoregress_func import autoregressive_func

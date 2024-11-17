@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import torch as pt
 import sys
 
