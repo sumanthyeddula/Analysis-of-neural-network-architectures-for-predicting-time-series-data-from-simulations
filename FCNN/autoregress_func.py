@@ -68,4 +68,3 @@ def autoregressive_func(
         return avg_loss, predictions
     else:
         return avg_loss
-#

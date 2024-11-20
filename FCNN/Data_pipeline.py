@@ -170,11 +170,11 @@ def process_all_simulations(base_path: str) -> List[Tuple[np.ndarray, np.ndarray
 
     return dataframes
 
-# Define the main path for the exercises directory
-main_path = r'D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\ResearchProject\Research_project\exercises'
+# # Define the main path for the exercises directory
+# main_path = r'D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercises'
 
 # Process all simulations and get list of feature-label pairs
-all_dataframes = process_all_simulations(main_path)
+# all_dataframes = process_all_simulations(main_path)
 
 
 
