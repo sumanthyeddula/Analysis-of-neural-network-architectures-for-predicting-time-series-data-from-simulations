@@ -2,6 +2,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
+import seaborn as sns
+
 def plot_loss(train_losses, val_losses, save_path):
     """
     Plots the training and validation losses on a log scale and saves the plot.
@@ -64,3 +66,50 @@ def plot_dataframe_columns(labels_data, prediction_data, save_dir=None):
         if save_dir:
             plt.savefig(f"{save_dir}/{column}_plot.png", dpi=900)
             print(f"Plot for column '{column}' saved to {save_dir}/{column}_plot.png")
+
+
+
+
+
+
+def plot_dataframe_columns_heatmap(labels_data, prediction_data, save_dir=None):
+    """
+    Plots a heatmap for the differences between two datasets for all columns.
+
+    :param labels_data: The first dataset (NumPy array or DataFrame) - ground truth.
+    :param prediction_data: The second dataset (NumPy array or DataFrame) - predictions.
+    :param save_dir: Directory to save the heatmap. If None, the heatmap is only displayed.
+    """
+    columns = ['Cd', 'Cl', 'p_probe_0', 'p_probe_1', 'p_probe_2', 'p_probe_3', 
+               'p_probe_4', 'p_probe_5', 'p_probe_6', 'p_probe_7', 
+               'p_probe_8', 'p_probe_9', 'p_probe_10', 'p_probe_11']
+
+    # Convert both datasets to pandas DataFrame for easy manipulation
+    df1 = pd.DataFrame(labels_data, columns=columns)
+    df2 = pd.DataFrame(prediction_data, columns=columns)
+
+    # Subset data starting from row 400
+    df1 = df1.iloc[400:]
+    df2 = df2.iloc[400:]
+    
+    # Compute the differences
+    differences = (df1 - df2).abs()
+    
+    # Compute the mean absolute difference for each column
+    mean_differences = differences.mean().to_frame(name='Mean Absolute Difference')
+    
+    # Plot the heatmap
+    plt.figure(figsize=(12, 8))
+    sns.heatmap(mean_differences.T, annot=True, cmap='coolwarm', cbar=True)
+    plt.title('Heatmap of Mean Absolute Differences')
+    plt.xlabel('Columns')
+    plt.ylabel('Metric')
+    plt.tight_layout()
+
+    # Save or show the heatmap
+    if save_dir:
+        heatmap_path = f"{save_dir}/heatmap_differences.png"
+        plt.savefig(heatmap_path, dpi=900)
+        print(f"Heatmap saved to {heatmap_path}")
+    else:
+        plt.show()

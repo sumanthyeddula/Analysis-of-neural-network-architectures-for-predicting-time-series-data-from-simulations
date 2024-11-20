@@ -2,16 +2,11 @@ import torch as pt
 from FCNN import FCNNModel
 from LSTM import LSTMModel
 
-from autoregress_func import autoregressive_func
 from autoregress_train import train, test
 from utils import set_seed, split_dataset
 
-from plots import plot_dataframe_columns
-import pandas as pd
+from plots import plot_dataframe_columns, plot_loss, plot_dataframe_columns_heatmap
 import numpy as np
-
-from plots import plot_loss
-
 
 
 
@@ -28,7 +23,7 @@ if __name__ == "__main__":
     n_layers = 4
     n_neurons = 128
     sequence_length = 5
-    n_steps = 995
+    n_steps = 1000 - sequence_length
     n_epochs = 10
     learning_rate = 0.0001
     batch_Size = 4
@@ -37,7 +32,7 @@ if __name__ == "__main__":
 
     set_seed(42)
     
-    model_path = './test_model/model_epoch_95.pth'
+    model_path = './test/model_best.pth'
     
     if test_mode:
         # Load and prepare training data
@@ -71,6 +66,7 @@ if __name__ == "__main__":
 
         # Plot the predictions and actuals
         plot_dataframe_columns(all_actuals, all_predictions, save_dir="test")
+        plot_dataframe_columns_heatmap(all_actuals, all_predictions, save_dir="test")
         
         exit(0)
 
@@ -82,6 +78,8 @@ if __name__ == "__main__":
         from Data_pipeline import process_all_simulations
         main_path = r'D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercises'
         all_dataframes = process_all_simulations(main_path)
+
+    
 
 
 

@@ -10,6 +10,7 @@ def extract_force_coefficients(filepath: str) -> pd.DataFrame:
     
     # Skip initial non-data lines and select Cd, Cl columns
     force_df = pd.read_csv(filepath, delim_whitespace=True, skiprows=13, usecols=[1, 2], names=['Cd', 'Cl'])
+
     return force_df
 
 def extract_pressure_probes(filepath: str) -> pd.DataFrame:
@@ -85,6 +86,7 @@ def load_base_data(base_dir: str) -> pd.DataFrame:
 
     # Extract force, probe, and actuation parameters
     base_force_df = extract_force_coefficients(force_path)
+
     base_probe_df = extract_pressure_probes(probe_path)
     amplitude, frequency = extract_actuation_parameters(actuation_path)
 
@@ -170,11 +172,11 @@ def process_all_simulations(base_path: str) -> List[Tuple[np.ndarray, np.ndarray
 
     return dataframes
 
-# # Define the main path for the exercises directory
-# main_path = r'D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercises'
+# Define the main path for the exercises directory
+main_path = r'D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercises'
 
 # Process all simulations and get list of feature-label pairs
-# all_dataframes = process_all_simulations(main_path)
+all_dataframes = process_all_simulations(main_path)
 
 
 
