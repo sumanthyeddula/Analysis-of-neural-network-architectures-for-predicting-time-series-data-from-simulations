@@ -6,8 +6,7 @@ from typing import Tuple, List
 def extract_force_coefficients(filepath: str) -> pd.DataFrame:
     """Extracts only the drag (Cd) and lift (Cl) coefficients from a specified file, excluding time."""
     if not os.path.isfile(filepath):
-        raise FileNotFoundError(f"The file {filepath} was not found.")
-    
+        raise FileNotFoundError(f"The file {filepath} was not found.")   
     # Skip initial non-data lines and select Cd, Cl columns
     force_df = pd.read_csv(filepath, delim_whitespace=True, skiprows=13, usecols=[1, 2], names=['Cd', 'Cl'])
 
