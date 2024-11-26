@@ -2,11 +2,12 @@ import os
 import pandas as pd
 import numpy as np
 from typing import Tuple, List
+from utils import split_dataset
 
 def extract_force_coefficients(filepath: str) -> pd.DataFrame:
     """Extracts only the drag (Cd) and lift (Cl) coefficients from a specified file, excluding time."""
     if not os.path.isfile(filepath):
-        raise FileNotFoundError(f"The file {filepath} was not found.")   
+        raise FileNotFoundError(f"The file {filepath} was not found.")
     # Skip initial non-data lines and select Cd, Cl columns
     force_df = pd.read_csv(filepath, delim_whitespace=True, skiprows=13, usecols=[1, 2], names=['Cd', 'Cl'])
 
@@ -145,7 +146,7 @@ def create_simulation_dataframe(sim_dir: str, base_df: pd.DataFrame) -> pd.DataF
 
     return final_df
 
-def process_all_simulations(base_path: str) -> List[Tuple[np.ndarray, np.ndarray]]:
+def process_all_simulations(base_path: str, train: bool, test_size: float) -> List[Tuple[np.ndarray, np.ndarray]]:
     """Processes all simulations in the exercises directory, combining base and simulation data."""
     # Load base data from folder 0/cylinder2D
     base_dir = os.path.join(base_path, '0')
@@ -169,13 +170,20 @@ def process_all_simulations(base_path: str) -> List[Tuple[np.ndarray, np.ndarray
                 
                 dataframes.append((features, labels))  # Store feature-label pairs as tuples
 
-    return dataframes
+    train_data, test_data = split_dataset(dataframes, test_size=test_size)
+
+    if train:
+        return train_data
+    else:   
+        return test_data    
 
 # Define the main path for the exercises directory
-main_path = r'D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercises'
+# main_path = r'D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercises'
 
 # Process all simulations and get list of feature-label pairs
-all_dataframes = process_all_simulations(main_path)
+# all_dataframes = process_all_simulations(main_path)
+
+
 
 
 

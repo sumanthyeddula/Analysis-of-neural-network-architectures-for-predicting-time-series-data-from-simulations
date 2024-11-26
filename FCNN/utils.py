@@ -2,6 +2,7 @@ import torch as pt
 import numpy as np
 import random
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 def set_seed(seed_value=42):
     """
@@ -27,11 +28,11 @@ def set_seed(seed_value=42):
 
 
 
-def split_dataset(data):
+def split_dataset(data, test_size=0.2):
 
 
   # Split train data into smaller train and validation sets
-    train_split, val_split = train_test_split(data, test_size=0.2, random_state=42)
+    train_split, val_split = train_test_split(data, test_size=test_size, random_state=42)
 
     # Output results
     print("Training Features:")
@@ -52,4 +53,43 @@ def save_model(model, file_path):
     """
     pt.save(model.state_dict(), file_path)
     print(f"Model saved to {file_path}")
+
+
+
+def normalize_data(data, sequence_length, n_steps, n_features):
+    """
+    Preprocess the dataset by normalizing input sequences.
+
+    Args:
+        data: Dataset to preprocess.
+        sequence_length: Length of input sequences.
+        n_steps: Number of prediction steps.
+        n_features: Number of input features.
+
+    Returns:
+        List of normalized inputs and corresponding targets.
+    """
+    normalized_data = []
+
+    scaler = MinMaxScaler()  # Use a single scaler for all sequences
+    for sequence in data:
+        dataframe = sequence[0]
+        
+        # Skip sequences with unexpected shapes or lengths
+        if dataframe.shape[1] != n_features or dataframe.shape[0] < sequence_length + n_steps:
+            continue
+        
+        # Prepare input and target data
+        initial_input = dataframe[0:sequence_length]
+        target_data = dataframe[sequence_length:sequence_length + n_steps, :14]
+
+        # Normalize input
+        normalized_input = scaler.fit_transform(initial_input)
+        normalized_data.append((normalized_input, target_data, dataframe[:, -1]))
+
+        
+    print("normalization done")
+
+    return normalized_data
+
 

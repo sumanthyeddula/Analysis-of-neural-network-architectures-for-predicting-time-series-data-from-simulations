@@ -40,3 +40,5 @@ class FCNNModel(pt.nn.Module):
         for i_layer in range(len(self.layers) - 1):
             x = self.activation(self.layers[i_layer](x))
         return self.layers[-1](x)
+    
+   
