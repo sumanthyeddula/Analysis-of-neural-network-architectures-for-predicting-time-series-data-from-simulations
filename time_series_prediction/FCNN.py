@@ -3,8 +3,15 @@ import sys
 
 
 class FCNNModel(pt.nn.Module):
-    def __init__(self, n_outputs: int, n_layers: int = 3, n_neurons: int = 128, sequence_length: int = 5, n_features: int = 15,
-                 activation: callable = pt.nn.functional.leaky_relu):
+    def __init__(
+        self,
+        n_outputs: int,
+        n_layers: int = 3,
+        n_neurons: int = 128,
+        sequence_length: int = 5,
+        n_features: int = 15,
+        activation: callable = pt.nn.functional.leaky_relu,
+    ):
         """
         implements a fully connected neural network
 
@@ -40,5 +47,3 @@ class FCNNModel(pt.nn.Module):
         for i_layer in range(len(self.layers) - 1):
             x = self.activation(self.layers[i_layer](x))
         return self.layers[-1](x)
-    
-   

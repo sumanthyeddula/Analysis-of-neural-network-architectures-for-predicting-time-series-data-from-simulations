@@ -7,9 +7,6 @@ from sklearn.preprocessing import MinMaxScaler
 from utils import save_model, normalize_data
 
 
-
-
-
 def test(
     model,
     test_Data,
@@ -18,7 +15,7 @@ def test(
     n_features,
     criterion,
     batch_size=1,
-    test_single=True
+    test_single=True,
 ):
     """
     Test the trained model on a single or multiple test datasets.
@@ -47,17 +44,18 @@ def test(
 
             # Prepare input and target data
             initial_input = dataframe[0:sequence_length]
-            target_data = dataframe[sequence_length:sequence_length + n_steps, :14]
-
+            target_data = dataframe[sequence_length : sequence_length + n_steps, :14]
 
             # Extract the last column for rotational speed
             rotational_Speed = dataframe[:, -1]
-            rotational_Speed = pd.DataFrame(rotational_Speed, columns=['last_column'])
+            rotational_Speed = pd.DataFrame(rotational_Speed, columns=["last_column"])
 
             # Normalize input
             scaler = MinMaxScaler()
             normalized_input = scaler.fit_transform(initial_input)
-            normalized_input_tensor = pt.tensor(normalized_input, dtype=pt.float32).view(1, sequence_length, n_features)
+            normalized_input_tensor = pt.tensor(
+                normalized_input, dtype=pt.float32
+            ).view(1, sequence_length, n_features)
 
             # Convert target data to PyTorch tensor
             target_data_tensor = pt.tensor(target_data, dtype=pt.float32)
@@ -73,7 +71,7 @@ def test(
                 rotational_speed_list=rotational_Speed,
                 sequence_length=sequence_length,
                 is_training=False,
-                trained_model=True
+                trained_model=True,
             )
 
             all_predictions.append(predictions)
@@ -83,7 +81,7 @@ def test(
         else:
             # Test on multiple datasets
             for batch_start in range(0, len(test_Data), batch_size):
-                batch = test_Data[batch_start:batch_start + batch_size]
+                batch = test_Data[batch_start : batch_start + batch_size]
                 batch_loss = 0
                 batch_predictions = []
                 batch_actuals = []
@@ -92,18 +90,27 @@ def test(
                     dataframe = sequence[0]
 
                     # Ensure the sequence has the correct shape and length
-                    if dataframe.shape[1] != n_features or dataframe.shape[0] < sequence_length + n_steps:
-                        print(f"Skipping sequence due to unexpected shape or insufficient length.")
+                    if (
+                        dataframe.shape[1] != n_features
+                        or dataframe.shape[0] < sequence_length + n_steps
+                    ):
+                        print(
+                            f"Skipping sequence due to unexpected shape or insufficient length."
+                        )
                         continue
 
                     # Prepare input and target data
                     initial_input = dataframe[0:sequence_length]
-                    target_data = dataframe[sequence_length:sequence_length + n_steps, :14]
+                    target_data = dataframe[
+                        sequence_length : sequence_length + n_steps, :14
+                    ]
 
                     # Normalize the input
                     scaler = MinMaxScaler()
                     normalized_input = scaler.fit_transform(initial_input)
-                    normalized_input_tensor = pt.tensor(normalized_input, dtype=pt.float32).view(1, sequence_length, n_features)
+                    normalized_input_tensor = pt.tensor(
+                        normalized_input, dtype=pt.float32
+                    ).view(1, sequence_length, n_features)
 
                     # Convert target data to PyTorch tensor
                     target_data_tensor = pt.tensor(target_data, dtype=pt.float32)
@@ -122,7 +129,9 @@ def test(
                         trained_model=True,
                     )
 
-                    predictions_tensor = pt.tensor(predictions).view(-1, target_data.shape[1])
+                    predictions_tensor = pt.tensor(predictions).view(
+                        -1, target_data.shape[1]
+                    )
                     loss = criterion(predictions_tensor, target_data_tensor)
                     batch_loss += loss.item()
 
@@ -138,11 +147,21 @@ def test(
     return avg_test_loss, all_predictions, all_actuals
 
 
-
-
-
-
-def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_length, optimizer, criterion, batch_size, save_path, patience, shuffle=True):
+def train(
+    model,
+    n_epochs,
+    n_steps,
+    n_features,
+    train_Data,
+    val_Data,
+    sequence_length,
+    optimizer,
+    criterion,
+    batch_size,
+    save_path,
+    patience,
+    shuffle=True,
+):
     """
     Train the model with early stopping.
 
@@ -164,13 +183,18 @@ def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_l
 
     # Preprocess the training and validation datasets
     print("Preprocessing data...")
-    train_Data_preprocessed = normalize_data(train_Data,sequence_length, n_steps, n_features)
-    val_Data_preprocessed = normalize_data(val_Data,sequence_length, n_steps, n_features)
+    train_Data_preprocessed = normalize_data(
+        train_Data, sequence_length, n_steps, n_features
+    )
+    print("Preprocessing data...", train_Data_preprocessed)
+    val_Data_preprocessed = normalize_data(
+        val_Data, sequence_length, n_steps, n_features
+    )
 
     train_losses = []
     val_losses = []
 
-    best_val_loss = float('inf')
+    best_val_loss = float("inf")
     early_stop_counter = 0
 
     for epoch in range(n_epochs):
@@ -183,20 +207,31 @@ def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_l
 
         model.train()
         for batch_start in range(0, len(train_Data_preprocessed), batch_size):
-            batch = train_Data_preprocessed[batch_start:batch_start + batch_size]
+            batch = train_Data_preprocessed[batch_start : batch_start + batch_size]
             batch_loss = 0
 
             for normalized_input, target_data, rotational_speed in batch:
                 # Convert normalized input and target to PyTorch tensors
-                normalized_input_tensor = pt.tensor(normalized_input, dtype=pt.float32).view(1, sequence_length, n_features)
+                normalized_input_tensor = pt.tensor(
+                    normalized_input, dtype=pt.float32
+                ).view(1, sequence_length, n_features)
                 target_data_tensor = pt.tensor(target_data, dtype=pt.float32)
-                rotational_speed_tensor = pd.DataFrame(rotational_speed, columns=['last_column'])
+                rotational_speed_tensor = pd.DataFrame(
+                    rotational_speed, columns=["last_column"]
+                )
 
                 # Train the model on the current sequence
                 avg_loss = autoregressive_func(
-                    model, normalized_input_tensor, target_data_tensor, n_steps,
-                    optimizer, criterion, rotational_speed_tensor, sequence_length,
-                    is_training=True, trained_model=False
+                    model,
+                    normalized_input_tensor,
+                    target_data_tensor,
+                    n_steps,
+                    optimizer,
+                    criterion,
+                    rotational_speed_tensor,
+                    sequence_length,
+                    is_training=True,
+                    trained_model=False,
                 )
                 batch_loss += avg_loss
 
@@ -205,15 +240,30 @@ def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_l
         # Validation phase
         model.eval()
         with pt.no_grad():
-            for normalized_input, target_data, rotational_speed in val_Data_preprocessed:
-                normalized_input_tensor = pt.tensor(normalized_input, dtype=pt.float32).view(1, sequence_length, n_features)
+            for (
+                normalized_input,
+                target_data,
+                rotational_speed,
+            ) in val_Data_preprocessed:
+                normalized_input_tensor = pt.tensor(
+                    normalized_input, dtype=pt.float32
+                ).view(1, sequence_length, n_features)
                 target_data_tensor = pt.tensor(target_data, dtype=pt.float32)
-                rotational_speed_tensor = pd.DataFrame(rotational_speed, columns=['last_column'])
+                rotational_speed_tensor = pd.DataFrame(
+                    rotational_speed, columns=["last_column"]
+                )
 
                 avg_loss = autoregressive_func(
-                    model, normalized_input_tensor, target_data_tensor, n_steps,
-                    optimizer=None, criterion=criterion, rotational_speed_list=rotational_speed_tensor,
-                    sequence_length=sequence_length, is_training=False, trained_model=False
+                    model,
+                    normalized_input_tensor,
+                    target_data_tensor,
+                    n_steps,
+                    optimizer=None,
+                    criterion=criterion,
+                    rotational_speed_list=rotational_speed_tensor,
+                    sequence_length=sequence_length,
+                    is_training=False,
+                    trained_model=False,
                 )
                 val_loss += avg_loss
 
@@ -231,11 +281,12 @@ def train(model, n_epochs, n_steps, n_features, train_Data, val_Data, sequence_l
 
         train_losses.append(train_loss)
         val_losses.append(val_loss)
-        print(f"Epoch [{epoch+1}/{n_epochs}] -> Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}")
+        print(
+            f"Epoch [{epoch+1}/{n_epochs}] -> Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}"
+        )
 
         if early_stop_counter >= patience:
             print("Early stopping triggered.")
             break
 
     return train_losses, val_losses
-
