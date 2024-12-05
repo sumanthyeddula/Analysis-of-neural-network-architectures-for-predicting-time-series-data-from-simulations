@@ -5,6 +5,8 @@ import pandas as pd
 from autoregress_func import autoregressive_func
 from sklearn.preprocessing import MinMaxScaler
 from utils import save_model, normalize_data
+from plots import plot_loss
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 def test(
@@ -152,8 +154,8 @@ def train(
     n_epochs,
     n_steps,
     n_features,
-    train_Data,
-    val_Data,
+    train_Data_preprocessed,
+    val_Data_preprocessed,
     sequence_length,
     optimizer,
     criterion,
@@ -181,21 +183,26 @@ def train(
     """
     print("********************************************************* Code starts")
 
-    # Preprocess the training and validation datasets
-    print("Preprocessing data...")
-    train_Data_preprocessed = normalize_data(
-        train_Data, sequence_length, n_steps, n_features
-    )
-    print("Preprocessing data...", train_Data_preprocessed)
-    val_Data_preprocessed = normalize_data(
-        val_Data, sequence_length, n_steps, n_features
-    )
+    # # Preprocess the training and validation datasets
+    # print("Preprocessing data...")
+    # train_Data_preprocessed = normalize_data(
+    #     train_Data, sequence_length, n_steps, n_features
+    # )
+    # print("Preprocessing data...", train_Data_preprocessed)
+    # val_Data_preprocessed = normalize_data(
+    #     val_Data, sequence_length, n_steps, n_features
+    # )
 
     train_losses = []
     val_losses = []
 
     best_val_loss = float("inf")
     early_stop_counter = 0
+
+    # Initialize the scheduler
+    scheduler = ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=3, verbose=True
+    )
 
     for epoch in range(n_epochs):
         train_loss = 0
@@ -270,6 +277,15 @@ def train(
         train_loss /= len(train_Data_preprocessed)
         val_loss /= len(val_Data_preprocessed)
 
+        # # Update the learning rate
+        scheduler.step(val_loss)
+
+        # # Log the current learning rate
+        current_lr = scheduler.get_last_lr()[
+            0
+        ]  # Access the last learning rate from the scheduler
+        print(f"Current learning rate: {current_lr}")
+
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             early_stop_counter = 0
@@ -284,6 +300,9 @@ def train(
         print(
             f"Epoch [{epoch+1}/{n_epochs}] -> Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}"
         )
+
+        # Plot the losses after training
+        plot_loss(train_losses, val_losses, f"{save_path}_loss_plot.png")
 
         if early_stop_counter >= patience:
             print("Early stopping triggered.")

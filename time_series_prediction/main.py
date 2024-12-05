@@ -3,8 +3,9 @@ from FCNN import FCNNModel
 from LSTM import LSTMModel
 
 from autoregress_train import train, test
-from utils import set_seed, split_dataset
+from utils import set_seed, split_dataset, normalize_data, data_rearrange
 from hyperparameter_tuning import hyperparameter_tuning
+
 
 from plots import (
     plot_loss,
@@ -20,29 +21,29 @@ from hyperparameter_tuning import hyperparameter_tuning
 # Example of training loop over multiple epochs and sequences
 if __name__ == "__main__":
 
-    test_mode = True
+    test_mode = False
     hyperparameter_tune = False
 
     # Set model type
-    model = FCNNModel
+    model = LSTMModel
 
     # Set model parameters
     n_features = 15
     n_outputs = 14
-    n_layers = 3
-    n_neurons = 256
+    n_layers = 5
+    n_neurons = 128
     sequence_length = 5
-    n_steps = 600 - sequence_length
+    n_steps = 10 - sequence_length
 
     # Set training parameters
-    n_epochs = 10
-    learning_rate = 0.0001
-    batch_Size = 4
+    n_epochs = 300
+    learning_rate = 0.05
+    batch_Size = 1
     save_path = "./fcnn_test"
-    early_stopping_patience = 30
-    test_size = 0.2
+    early_stopping_patience = 50
+    test_size = 0.20
 
-    set_seed(42)
+    set_seed(32)
 
     # Hyperparameter tuning parameters
     n_trails = 20
@@ -54,12 +55,12 @@ if __name__ == "__main__":
         # Load and prepare training data
         from Data_pipeline import process_all_simulations
 
-        main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercise_act"
+        main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\RE_100"
         all_dataframes = process_all_simulations(
             main_path, train=False, test_size=test_size, dt=0.01
         )
 
-        data = all_dataframes[0]
+        data = all_dataframes[1]
 
         if model is FCNNModel:
             model = FCNNModel(
@@ -92,14 +93,18 @@ if __name__ == "__main__":
         all_predictions = np.array(all_predictions)
         all_actuals = np.array(all_actuals)
 
-        all_predictions = all_predictions.reshape(595, 14)
-        all_actuals = all_actuals.reshape(595, 14)
+        all_predictions = all_predictions.reshape(n_steps, 14)
+        all_actuals = all_actuals.reshape(n_steps, 14)
 
         # Plot the predictions and actuals
-        plot_dataframe_columns_combined(all_actuals, all_predictions, save_dir="test1")
+        plot_dataframe_columns_combined(
+            all_actuals, all_predictions, save_dir="fcnn_test"
+        )
         # plot_dataframe_columns_heatmap(all_actuals, all_predictions, save_dir="test")
         # compute_scaled_l2_loss_heatmap(all_actuals, all_predictions, save_dir="test1")
-        compute_scaled_l2_loss_scatter(all_actuals, all_predictions, save_dir="test1")
+        compute_scaled_l2_loss_scatter(
+            all_actuals, all_predictions, save_dir="fcnn_test"
+        )
 
         exit(0)
 
@@ -107,7 +112,7 @@ if __name__ == "__main__":
         # Load and prepare training data
         from Data_pipeline import process_all_simulations
 
-        main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercise_act"
+        main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\RE_100"
         all_dataframes = process_all_simulations(
             main_path, train=True, test_size=test_size, dt=0.01
         )
@@ -132,6 +137,12 @@ if __name__ == "__main__":
 
         optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
         criterion = pt.nn.MSELoss()
+        # all_dataframes = normalize_data(
+        #     all_dataframes, sequence_length, n_steps, n_features
+        # )
+        all_dataframes = data_rearrange(
+            all_dataframes, sequence_length, n_steps, n_features
+        )
         train_data, val_data = split_dataset(all_dataframes)
 
         if hyperparameter_tune:

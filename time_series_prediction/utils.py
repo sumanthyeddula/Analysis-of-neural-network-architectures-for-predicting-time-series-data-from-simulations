@@ -28,7 +28,7 @@ def set_seed(seed_value=42):
     pt.backends.cudnn.benchmark = False
 
 
-def split_dataset(data, test_size=0.2):
+def split_dataset(data, test_size=0.25):
 
     # Split train data into smaller train and validation sets
     train_split, val_split = train_test_split(
@@ -55,6 +55,45 @@ def save_model(model, file_path):
     print(f"Model saved to {file_path}")
 
 
+# def normalize_data(data, sequence_length, n_steps, n_features):
+#     """
+#     Preprocess the dataset by normalizing input sequences.
+
+#     Args:
+#         data: Dataset to preprocess.
+#         sequence_length: Length of input sequences.
+#         n_steps: Number of prediction steps.
+#         n_features: Number of input features.
+
+#     Returns:
+#         List of normalized inputs and corresponding targets.
+#     """
+#     normalized_data = []
+
+#     scaler = MinMaxScaler()  # Use a single scaler for all sequences
+#     for sequence in data:
+#         dataframe = sequence
+
+#         # Skip sequences with unexpected shapes or lengths
+#         if (
+#             dataframe.shape[1] != n_features
+#             or dataframe.shape[0] < sequence_length + n_steps
+#         ):
+#             continue
+
+#         # Prepare input and target data
+#         initial_input = dataframe[0:sequence_length]
+#         target_data = dataframe[sequence_length : sequence_length + n_steps, :14]
+
+#         # Normalize input
+#         normalized_input = scaler.fit_transform(initial_input)
+#         normalized_data.append((normalized_input, target_data, dataframe[:, -1]))
+
+#     print("normalization done")
+
+#     return normalized_data
+
+
 def normalize_data(data, sequence_length, n_steps, n_features):
     """
     Preprocess the dataset by normalizing input sequences.
@@ -68,9 +107,58 @@ def normalize_data(data, sequence_length, n_steps, n_features):
     Returns:
         List of normalized inputs and corresponding targets.
     """
-    normalized_data = []
+    # Combine all data sequences into a single array for normalization
+    combined_data = np.vstack(
+        [sequence for sequence in data if sequence.shape[1] == n_features]
+    )
 
-    scaler = MinMaxScaler()  # Use a single scaler for all sequences
+    # Normalize the combined data
+    scaler = MinMaxScaler()
+    normalized_combined_data = scaler.fit_transform(combined_data)
+
+    # Split the normalized data back into sequences and extract inputs/targets
+    normalized_data = []
+    current_index = 0
+    for sequence in data:
+        if (
+            sequence.shape[1] != n_features
+            or sequence.shape[0] < sequence_length + n_steps
+        ):
+            continue
+
+        num_rows = sequence.shape[0]
+        normalized_sequence = normalized_combined_data[
+            current_index : current_index + num_rows
+        ]
+        current_index += num_rows
+
+        # Prepare input and target data
+        initial_input = normalized_sequence[0:sequence_length]
+        target_data = normalized_sequence[
+            sequence_length : sequence_length + n_steps, :14
+        ]
+
+        normalized_data.append((initial_input, target_data, sequence[:, -1]))
+
+    print("Normalization done")
+    return normalized_data
+
+
+def data_rearrange(data, sequence_length, n_steps, n_features):
+    """
+    Preprocess the dataset by normalizing input sequences.
+
+    Args:
+        data: Dataset to preprocess.
+        sequence_length: Length of input sequences.
+        n_steps: Number of prediction steps.
+        n_features: Number of input features.
+
+    Returns:
+        List of normalized inputs and corresponding targets.
+    """
+    rearrange_data = []
+
     for sequence in data:
         dataframe = sequence
 
@@ -86,9 +174,9 @@ def normalize_data(data, sequence_length, n_steps, n_features):
         target_data = dataframe[sequence_length : sequence_length + n_steps, :14]
 
         # Normalize input
-        normalized_input = scaler.fit_transform(initial_input)
-        normalized_data.append((normalized_input, target_data, dataframe[:, -1]))
 
-    print("normalization done")
+        rearrange_data.append((initial_input, target_data, dataframe[:, -1]))
 
-    return normalized_data
+    print("data rearrange done")
+
+    return rearrange_data

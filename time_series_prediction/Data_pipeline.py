@@ -165,7 +165,7 @@ def process_all_simulations(
                 columns=["rotational_speed"]
             ).values  # Exclude 'rotational_speed' as labels
 
-            dataframes.append((features, labels))  # Store feature-label pairs as tuples
+            dataframes.append(sim_df.values)  # Store feature-label pairs as tuples
         break
 
     new_dataframes = []
@@ -174,11 +174,27 @@ def process_all_simulations(
     #     new_dataframes.append(new_data)
 
     for i in range(len(dataframes)):
-        new_data = dataframes[i][0][400:1001]
+        new_data = dataframes[i][400:1001]
         new_dataframes.append(new_data)
 
     # Split data into training and testing sets
     train_data, test_data = split_dataset(new_dataframes, test_size=test_size)
+
+    # import pickle
+
+    # # Save train and test data
+    # with open("train_data.pkl", "wb") as f:
+    #     pickle.dump(train_data, f)
+
+    # with open("test_data.pkl", "wb") as f:
+    #     pickle.dump(test_data, f)
+
+    # # Load train and test data
+    # with open("train_data.pkl", "rb") as f:
+    #     train_data_loaded = pickle.load(f)
+
+    # with open("test_data.pkl", "rb") as f:
+    #     test_data_loaded = pickle.load(f)
 
     if train:
         return train_data
@@ -186,11 +202,11 @@ def process_all_simulations(
         return test_data
 
 
-# Define the main path for the exercises directory
-# main_path = r'D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\exercise_act'
+# # Define the main path for the exercises directory
+main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\RE_100"
 
-# # Process all simulations and get list of feature-label pairs
-# train = process_all_simulations(main_path, train=True, test_size=0.2, dt = 0.01)
+# # # Process all simulations and get list of feature-label pairs
+train = process_all_simulations(main_path, train=True, test_size=0.2, dt=0.01)
 
 
-# print(train[0].shape)  # Display shape of features for first simulation
+print(train[0].shape)  # Display shape of features for first simulation
