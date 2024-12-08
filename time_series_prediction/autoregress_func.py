@@ -1,4 +1,5 @@
 import torch as pt
+import numpy as np
 
 
 def autoregressive_func(
@@ -10,23 +11,15 @@ def autoregressive_func(
     criterion,
     rotational_speed_list,
     sequence_length,
+    sampling_probability=0.0,  # Probability of using model's prediction
     is_training=True,
     trained_model=False,
 ):
     """
-    Perform autoregressive training or validation on a specific sequence.
+    Perform autoregressive training or validation on a specific sequence with scheduled sampling.
 
-    :param model: The FCNNModel instance to be trained or evaluated.
-    :param initial_input: Initial input tensor of shape [1, sequence_length, n_features].
-    :param target_data: Target output tensor of shape [n_steps, n_outputs].
-    :param n_steps: Number of future time steps to predict.
-    :param optimizer: Optimizer for training (ignored during validation).
-    :param criterion: Loss function.
-    :param rotational_speed_list: The rotational speed DataFrame.
-    :param sequence_length: Length of the input sequence window.
-    :param is_training: Whether the function is being used for training or validation.
-    :param trained_model: If True, returns predictions for external dataset.
-    :return: Average loss for the session and optionally the predicted values.
+    :param sampling_probability: Probability of using the model's prediction instead of ground truth.
+    (Other parameters remain unchanged.)
     """
     total_loss = 0
     predictions = []  # Store predictions for trained_model=True
@@ -57,15 +50,22 @@ def autoregressive_func(
         # Detach the next_pred to prevent graph accumulation
         next_pred = next_pred.detach()
 
+        # **Scheduled Sampling**: Choose between ground truth and model prediction
+        use_prediction = np.random.rand() < sampling_probability  # Sample decision
+        if use_prediction:
+            next_feature = next_pred  # Use model's prediction
+        else:
+            next_feature = target_data[step].unsqueeze(0)  # Use ground truth
+
         # Extract rotational speed from the sequence for the autoregressive window update
         rotational_speed = rotational_speed_list.iloc[sequence_length + step, 0]
         rotational_speed = pt.tensor([rotational_speed], dtype=pt.float32).unsqueeze(
             0
         )  # Shape [1, 1]
 
-        # Concatenate the prediction and rotational_speed to form the next input
+        # Concatenate the chosen feature (prediction or ground truth) and rotational speed
         next_feature = pt.cat(
-            (next_pred, rotational_speed), dim=1
+            (next_feature, rotational_speed), dim=1
         )  # Shape [1, n_features]
 
         # Reshape for sliding window update

@@ -3,6 +3,7 @@ import numpy as np
 import random
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+import pickle
 
 
 def set_seed(seed_value=42):
@@ -55,51 +56,12 @@ def save_model(model, file_path):
     print(f"Model saved to {file_path}")
 
 
-# def normalize_data(data, sequence_length, n_steps, n_features):
-#     """
-#     Preprocess the dataset by normalizing input sequences.
-
-#     Args:
-#         data: Dataset to preprocess.
-#         sequence_length: Length of input sequences.
-#         n_steps: Number of prediction steps.
-#         n_features: Number of input features.
-
-#     Returns:
-#         List of normalized inputs and corresponding targets.
-#     """
-#     normalized_data = []
-
-#     scaler = MinMaxScaler()  # Use a single scaler for all sequences
-#     for sequence in data:
-#         dataframe = sequence
-
-#         # Skip sequences with unexpected shapes or lengths
-#         if (
-#             dataframe.shape[1] != n_features
-#             or dataframe.shape[0] < sequence_length + n_steps
-#         ):
-#             continue
-
-#         # Prepare input and target data
-#         initial_input = dataframe[0:sequence_length]
-#         target_data = dataframe[sequence_length : sequence_length + n_steps, :14]
-
-#         # Normalize input
-#         normalized_input = scaler.fit_transform(initial_input)
-#         normalized_data.append((normalized_input, target_data, dataframe[:, -1]))
-
-#     print("normalization done")
-
-#     return normalized_data
-
-
-def normalize_data(data, sequence_length, n_steps, n_features):
+def normalize_column_data(data, sequence_length, n_steps, n_features):
     """
-    Preprocess the dataset by normalizing input sequences.
+    Preprocess the dataset by normalizing each column separately in input sequences.
 
     Args:
-        data: Dataset to preprocess.
+        data: Dataset to preprocess (list of numpy arrays).
         sequence_length: Length of input sequences.
         n_steps: Number of prediction steps.
         n_features: Number of input features.
@@ -107,14 +69,24 @@ def normalize_data(data, sequence_length, n_steps, n_features):
     Returns:
         List of normalized inputs and corresponding targets.
     """
-    # Combine all data sequences into a single array for normalization
-    combined_data = np.vstack(
-        [sequence for sequence in data if sequence.shape[1] == n_features]
-    )
+    # Initialize scalers for each feature
+    scalers = [MinMaxScaler() for _ in range(n_features)]
 
-    # Normalize the combined data
-    scaler = MinMaxScaler()
-    normalized_combined_data = scaler.fit_transform(combined_data)
+    # Collect all data column-wise for normalization
+    combined_columns = [
+        np.hstack([seq[:, i] for seq in data if seq.shape[1] == n_features]).reshape(
+            -1, 1
+        )
+        for i in range(n_features)
+    ]
+
+    # Fit scalers to each column and normalize
+    normalized_columns = [
+        scaler.fit_transform(col) for scaler, col in zip(scalers, combined_columns)
+    ]
+
+    # Combine normalized columns back into sequences
+    normalized_combined_data = np.hstack(normalized_columns)
 
     # Split the normalized data back into sequences and extract inputs/targets
     normalized_data = []
@@ -140,43 +112,110 @@ def normalize_data(data, sequence_length, n_steps, n_features):
 
         normalized_data.append((initial_input, target_data, sequence[:, -1]))
 
+        with open("scalers.pkl", "wb") as f:
+            pickle.dump(scalers, f)
+
     print("Normalization done")
     return normalized_data
 
 
-def data_rearrange(data, sequence_length, n_steps, n_features):
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
+
+import numpy as np
+
+
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
+
+def denormalize_target_data(target_data, scalers=None):
     """
-    Preprocess the dataset by normalizing input sequences.
+    Denormalize the target data column-wise using the provided or created scalers.
 
     Args:
-        data: Dataset to preprocess.
-        sequence_length: Length of input sequences.
-        n_steps: Number of prediction steps.
-        n_features: Number of input features.
+        target_data: Normalized target data (list or numpy array of shape [n_samples, n_columns]).
+        scalers: Optional list of MinMaxScaler objects, one for each column.
+                 If None, new scalers will be created and used to fit the data.
 
     Returns:
-        List of normalized inputs and corresponding targets.
+        Denormalized target data (numpy array of shape [n_samples, n_columns]).
     """
-    rearrange_data = []
+    # Convert target_data to a NumPy array if it's a list
+    if isinstance(target_data, list):
+        target_data = np.array(
+            target_data[0]
+        )  # Extract the first element if it's a nested list
+        target_data = np.squeeze(target_data, axis=1)  # Remove unnecessary dimensions
 
-    for sequence in data:
-        dataframe = sequence
+    # Ensure target_data is in the correct shape
+    if (
+        target_data.ndim == 3 and target_data.shape[1] == 1
+    ):  # Shape (n_samples, 1, n_columns)
+        target_data = target_data.reshape(target_data.shape[0], -1)
 
-        # Skip sequences with unexpected shapes or lengths
-        if (
-            dataframe.shape[1] != n_features
-            or dataframe.shape[0] < sequence_length + n_steps
-        ):
-            continue
+    # Extract shape information
+    n_samples, n_columns = target_data.shape
 
-        # Prepare input and target data
-        initial_input = dataframe[0:sequence_length]
-        target_data = dataframe[sequence_length : sequence_length + n_steps, :14]
+    with open("scalers.pkl", "rb") as f:
+        scalers = pickle.load(f)
 
-        # Normalize input
+    # If scalers are not provided, create new scalers and fit them (dummy fit)
+    # if scalers is None:
+    #     print("Scalers not provided. Initializing MinMaxScaler for each column.")
+    #     scalers = [MinMaxScaler() for _ in range(n_columns)]
+    #     # Dummy fit (assuming normalized data was initially scaled between 0 and 1)
+    #     for i in range(n_columns):
+    #         scalers[i].fit(np.array([[0], [1]]))  # Fit to [0, 1] range
 
-        rearrange_data.append((initial_input, target_data, dataframe[:, -1]))
+    # Ensure the number of scalers matches the number of columns
+    assert (
+        n_columns == len(scalers) - 1
+    ), "The number of scalers must match the number of columns in target_data"
 
-    print("data rearrange done")
+    # Split the data into columns
+    columns = [target_data[:, i].reshape(-1, 1) for i in range(n_columns)]
 
-    return rearrange_data
+    # Denormalize each column using the respective scaler
+    denormalized_columns = [
+        scalers[i].inverse_transform(columns[i]) for i in range(n_columns)
+    ]
+
+    # Combine the columns back into the original shape
+    denormalized_data = np.hstack(denormalized_columns)
+
+    print("Denormalization complete.")
+    return denormalized_data
+
+
+import pickle
+import numpy as np
+
+
+def renormalize_data_column_wise(data):
+    """
+    Normalize a 2D dataset column-wise using MinMaxScaler.
+
+    Args:
+        data: Numpy array of shape (n_samples, n_features).
+
+    Returns:
+        normalized_data: Numpy array of normalized data with the same shape as input.
+        scalers: List of fitted MinMaxScaler objects, one for each column.
+    """
+    n_features = data.shape[1]  # Number of features
+
+    with open("scalers.pkl", "rb") as f:
+        scalers = pickle.load(f)
+
+    # Normalize each column
+    normalized_columns = [
+        scalers[i].fit_transform(data[:, i].reshape(-1, 1)) for i in range(n_features)
+    ]
+
+    # Combine normalized columns back into a single array
+    normalized_data = np.hstack(normalized_columns)
+
+    print("Normalization complete.")
+    return normalized_data

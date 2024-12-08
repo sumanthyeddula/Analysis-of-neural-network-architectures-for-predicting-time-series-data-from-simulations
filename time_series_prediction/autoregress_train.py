@@ -4,7 +4,7 @@ import pandas as pd
 
 from autoregress_func import autoregressive_func
 from sklearn.preprocessing import MinMaxScaler
-from utils import save_model, normalize_data
+from utils import save_model
 from plots import plot_loss
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
@@ -52,12 +52,13 @@ def test(
             rotational_Speed = dataframe[:, -1]
             rotational_Speed = pd.DataFrame(rotational_Speed, columns=["last_column"])
 
-            # Normalize input
-            scaler = MinMaxScaler()
-            normalized_input = scaler.fit_transform(initial_input)
-            normalized_input_tensor = pt.tensor(
-                normalized_input, dtype=pt.float32
-            ).view(1, sequence_length, n_features)
+            # Normalize the input
+
+            # scaler = MinMaxScaler()
+            # normalized_input = scaler.fit_transform(initial_input)
+            normalized_input_tensor = pt.tensor(initial_input, dtype=pt.float32).view(
+                1, sequence_length, n_features
+            )
 
             # Convert target data to PyTorch tensor
             target_data_tensor = pt.tensor(target_data, dtype=pt.float32)
@@ -107,11 +108,11 @@ def test(
                         sequence_length : sequence_length + n_steps, :14
                     ]
 
-                    # Normalize the input
-                    scaler = MinMaxScaler()
-                    normalized_input = scaler.fit_transform(initial_input)
+                    # # Normalize the input
+                    # scaler = MinMaxScaler()
+                    # normalized_input = scaler.fit_transform(initial_input)
                     normalized_input_tensor = pt.tensor(
-                        normalized_input, dtype=pt.float32
+                        initial_input, dtype=pt.float32
                     ).view(1, sequence_length, n_features)
 
                     # Convert target data to PyTorch tensor
@@ -163,35 +164,11 @@ def train(
     save_path,
     patience,
     shuffle=True,
+    start_sampling_prob=0.0,  # Start probability of using model's predictions
+    end_sampling_prob=1.0,  # Final probability
+    sampling_schedule_type="linear",  # Type of schedule: "linear" or "exponential"
 ):
-    """
-    Train the model with early stopping.
-
-    Args:
-        model: PyTorch model to be trained.
-        n_epochs: Number of epochs to train.
-        n_steps: Number of prediction steps.
-        n_features: Number of input features.
-        train_Data: Training dataset.
-        val_Data: Validation dataset.
-        sequence_length: Input sequence length.
-        optimizer: Optimizer for training.
-        criterion: Loss function.
-        batch_size: Batch size for training.
-        save_path: Path to save the model.
-        patience: Number of epochs to wait for improvement before stopping early.
-    """
     print("********************************************************* Code starts")
-
-    # # Preprocess the training and validation datasets
-    # print("Preprocessing data...")
-    # train_Data_preprocessed = normalize_data(
-    #     train_Data, sequence_length, n_steps, n_features
-    # )
-    # print("Preprocessing data...", train_Data_preprocessed)
-    # val_Data_preprocessed = normalize_data(
-    #     val_Data, sequence_length, n_steps, n_features
-    # )
 
     train_losses = []
     val_losses = []
@@ -201,7 +178,7 @@ def train(
 
     # Initialize the scheduler
     scheduler = ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=3, verbose=True
+        optimizer, mode="min", factor=0.5, patience=5, verbose=True
     )
 
     for epoch in range(n_epochs):
@@ -211,6 +188,18 @@ def train(
         # Shuffle training data for each epoch
         if shuffle:
             np.random.shuffle(train_Data_preprocessed)
+
+        # **Calculate Sampling Probability**
+        if sampling_schedule_type == "linear":
+            sampling_probability = min(
+                start_sampling_prob
+                + (end_sampling_prob - start_sampling_prob) * (epoch / n_epochs),
+                1.0,
+            )
+        elif sampling_schedule_type == "exponential":
+            sampling_probability = start_sampling_prob * (
+                end_sampling_prob / start_sampling_prob
+            ) ** (epoch / n_epochs)
 
         model.train()
         for batch_start in range(0, len(train_Data_preprocessed), batch_size):
@@ -227,7 +216,7 @@ def train(
                     rotational_speed, columns=["last_column"]
                 )
 
-                # Train the model on the current sequence
+                # Train the model on the current sequence with scheduled sampling
                 avg_loss = autoregressive_func(
                     model,
                     normalized_input_tensor,
@@ -237,6 +226,7 @@ def train(
                     criterion,
                     rotational_speed_tensor,
                     sequence_length,
+                    sampling_probability=sampling_probability,  # Pass the dynamic probability
                     is_training=True,
                     trained_model=False,
                 )
@@ -277,15 +267,17 @@ def train(
         train_loss /= len(train_Data_preprocessed)
         val_loss /= len(val_Data_preprocessed)
 
-        # # Update the learning rate
+        # Update the learning rate
         scheduler.step(val_loss)
 
-        # # Log the current learning rate
         current_lr = scheduler.get_last_lr()[
             0
         ]  # Access the last learning rate from the scheduler
-        print(f"Current learning rate: {current_lr}")
+        print(
+            f"Epoch [{epoch+1}/{n_epochs}] -> Sampling Probability: {sampling_probability:.4f}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}, LR: {current_lr:.6f}"
+        )
 
+        # Early stopping logic remains the same
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             early_stop_counter = 0
@@ -297,11 +289,7 @@ def train(
 
         train_losses.append(train_loss)
         val_losses.append(val_loss)
-        print(
-            f"Epoch [{epoch+1}/{n_epochs}] -> Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}"
-        )
 
-        # Plot the losses after training
         plot_loss(train_losses, val_losses, f"{save_path}_loss_plot.png")
 
         if early_stop_counter >= patience:
