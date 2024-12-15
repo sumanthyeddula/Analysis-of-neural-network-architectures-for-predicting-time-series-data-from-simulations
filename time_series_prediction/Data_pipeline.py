@@ -83,7 +83,7 @@ def calculate_rotational_speed(
         rotational_speed = amplitude * np.sin(2 * np.pi * frequency * t)
         # rotational_speed_magnitude = np.linalg.norm(rotational_speed)
         rotational_speed_magnitudes.append(rotational_speed)
-    print("rotational speed maginitude", rotational_speed_magnitudes)
+    # print("rotational speed maginitude", rotational_speed_magnitudes)
 
     return pd.DataFrame({"rotational_speed": rotational_speed_magnitudes})
 
@@ -98,10 +98,10 @@ def create_simulation_dataframe(sim_dir: str, dt: float) -> pd.DataFrame:
     actuation_path = os.path.join(sim_dir, "0.org", "U")
 
     # Log paths being used to verify unique folders are accessed
-    print(f"\nReading data from: {sim_dir}")
-    print(f"Force data path: {force_path}")
-    print(f"Probe data path: {probe_path}")
-    print(f"Actuation data path: {actuation_path}")
+    # print(f"\nReading data from: {sim_dir}")
+    # print(f"Force data path: {force_path}")
+    # print(f"Probe data path: {probe_path}")
+    # print(f"Actuation data path: {actuation_path}")
 
     # Re-extract amplitude and frequency for this specific simulation
     amplitude, frequency = extract_actuation_parameters(actuation_path)
@@ -112,7 +112,7 @@ def create_simulation_dataframe(sim_dir: str, dt: float) -> pd.DataFrame:
 
     # Time array for simulation data (assuming time steps correspond to data rows)
     num_rows = sim_force_df.shape[0]
-    print(num_rows)
+    # print(num_rows)
     times = np.arange(0.01, (num_rows + 1) * dt, dt)
 
     # Calculate rotational speeds for simulation data using simulation's amplitude and frequency
@@ -136,7 +136,7 @@ def create_simulation_dataframe(sim_dir: str, dt: float) -> pd.DataFrame:
     required_columns = ["Cd", "Cl"] + list(sim_probe_df.columns) + ["rotational_speed"]
     final_df = final_df[required_columns]
 
-    print(final_df.head())  # Display first few rows of the combined DataFrame
+    # print(final_df.head())  # Display first few rows of the combined DataFrame
 
     return final_df
 
@@ -150,12 +150,12 @@ def process_all_simulations(
     dataframes = []
 
     for root, dirs, files in os.walk(base_path):
-        for directory in dirs:
-            print(directory)
+        # for directory in dirs:
+        #     print(directory)
         for directory in dirs:
             sim_dir = os.path.join(base_path, directory)
 
-            print(f"Processing simulation folder: {sim_dir}")
+            # print(f"Processing simulation folder: {sim_dir}")
 
             sim_df = create_simulation_dataframe(sim_dir, dt)
 
@@ -203,10 +203,10 @@ def process_all_simulations(
 
 
 # # Define the main path for the exercises directory
-main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\RE_100"
+# main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\RE_100"
 
 # # # Process all simulations and get list of feature-label pairs
-train = process_all_simulations(main_path, train=True, test_size=0.2, dt=0.01)
+# train = process_all_simulations(main_path, train=True, test_size=0.2, dt=0.01)
 
 
-print(train[0].shape)  # Display shape of features for first simulation
+# print(train[0].shape)  # Display shape of features for first simulation

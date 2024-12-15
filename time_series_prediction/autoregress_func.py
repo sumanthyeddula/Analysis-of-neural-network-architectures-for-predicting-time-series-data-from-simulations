@@ -11,80 +11,72 @@ def autoregressive_func(
     criterion,
     rotational_speed_list,
     sequence_length,
-    sampling_probability=0.0,  # Probability of using model's prediction
+    sampling_probability=0.0,
     is_training=True,
     trained_model=False,
+    device="cpu",
 ):
     """
-    Perform autoregressive training or validation on a specific sequence with scheduled sampling.
+    Perform autoregressive training or validation on a specific sequence.
 
-    :param sampling_probability: Probability of using the model's prediction instead of ground truth.
-    (Other parameters remain unchanged.)
+    Returns:
+    - avg_loss: Average loss over the steps.
+    - l2_norms: Dictionary containing L2 norms for the first column, second column, and the rest.
     """
     total_loss = 0
-    predictions = []  # Store predictions for trained_model=True
+    predictions = []
+    l2_norms = {"col_1": 0, "col_2": 0, "rest": 0}
 
-    # Flatten the initial input for the model
-    current_input = initial_input.reshape(
-        1, -1
-    )  # Shape [1, sequence_length * n_features]
+    initial_input = initial_input.to(device)
+    target_data = target_data.to(device)
+
+    current_input = initial_input.view(1, -1)  # Flatten for input
 
     for step in range(n_steps):
-        # Perform forward pass to predict the next time step
-        next_pred = model(current_input)  # Shape [1, n_outputs]
+        next_pred = model(current_input)  # Forward pass
 
-        # Store predictions only if trained_model is True
-        if trained_model:
-            predictions.append(next_pred.detach().cpu().numpy())
-
-        # Calculate the loss between predicted output and the actual next step in target_data
+        # Loss
         loss = criterion(next_pred, target_data[step].unsqueeze(0))
         total_loss += loss.item()
 
+        # Backpropagation if training
         if is_training:
-            # Backpropagate and optimize
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-        # Detach the next_pred to prevent graph accumulation
-        next_pred = next_pred.detach()
+            # Calculate L2 norms
+            l2_norms["col_1"] += pt.norm(next_pred[:, 0] - target_data[step, 0]) ** 2
+            l2_norms["col_2"] += pt.norm(next_pred[:, 1] - target_data[step, 1]) ** 2
+            l2_norms["rest"] += pt.norm(next_pred[:, 2:] - target_data[step, 2:]) ** 2
 
-        # **Scheduled Sampling**: Choose between ground truth and model prediction
-        use_prediction = np.random.rand() < sampling_probability  # Sample decision
-        if use_prediction:
-            next_feature = next_pred  # Use model's prediction
-        else:
-            next_feature = target_data[step].unsqueeze(0)  # Use ground truth
+        # Store predictions for trained_model=True
+        if trained_model:
+            predictions.append(next_pred.detach().cpu().numpy())
 
-        # Extract rotational speed from the sequence for the autoregressive window update
-        rotational_speed = rotational_speed_list.iloc[sequence_length + step, 0]
-        rotational_speed = pt.tensor([rotational_speed], dtype=pt.float32).unsqueeze(
-            0
-        )  # Shape [1, 1]
+        # Scheduled Sampling
+        use_prediction = np.random.rand() < sampling_probability
+        next_feature = next_pred if use_prediction else target_data[step].unsqueeze(0)
 
-        # Concatenate the chosen feature (prediction or ground truth) and rotational speed
-        next_feature = pt.cat(
-            (next_feature, rotational_speed), dim=1
-        )  # Shape [1, n_features]
+        # Add rotational speed
+        rotational_speed = pt.tensor(
+            [rotational_speed_list[sequence_length + step, 0]],
+            dtype=pt.float32,
+            device=device,
+        ).unsqueeze(0)
+        next_feature = pt.cat((next_feature, rotational_speed), dim=1)
 
-        # Reshape for sliding window update
-        next_feature = next_feature.view(1, 1, -1)  # Shape [1, 1, n_features]
-
-        # Update initial input sequence by sliding window to include next feature and remove oldest step
+        # Update sequence
         initial_input = pt.cat(
-            (initial_input[:, 1:], next_feature), dim=1
-        )  # Shape [1, sequence_length, n_features]
-
-        # Flatten the updated sequence for the next prediction
-        current_input = initial_input.view(
-            1, -1
-        )  # Shape [1, sequence_length * n_features]
+            (initial_input[:, 1:], next_feature.view(1, 1, -1)), dim=1
+        )
+        current_input = initial_input.view(1, -1)
 
     avg_loss = total_loss / n_steps
+    if is_training:
+        l2_norms = {k: (v / n_steps).sqrt().item() for k, v in l2_norms.items()}
 
-    # Return average loss and optionally predictions
     if trained_model:
         return avg_loss, predictions
     else:
-        return avg_loss
+        return avg_loss, l2_norms

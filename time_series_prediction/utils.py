@@ -52,7 +52,7 @@ def save_model(model, file_path):
     :param model: Trained PyTorch model to be saved.
     :param file_path: Path to save the model (e.g., 'model.pth').
     """
-    pt.save(model.state_dict(), file_path)
+    pt.save(model.state_dict(), f"{file_path}/{file_path}_best_model.pth")
     print(f"Model saved to {file_path}")
 
 
@@ -112,22 +112,11 @@ def normalize_column_data(data, sequence_length, n_steps, n_features):
 
         normalized_data.append((initial_input, target_data, sequence[:, -1]))
 
-        with open("scalers.pkl", "wb") as f:
-            pickle.dump(scalers, f)
+    with open("scalers.pkl", "wb") as f:
+        pickle.dump(scalers, f)
 
     print("Normalization done")
     return normalized_data
-
-
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-
-
-import numpy as np
-
-
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
 
 
 def denormalize_target_data(target_data, scalers=None):
@@ -147,7 +136,10 @@ def denormalize_target_data(target_data, scalers=None):
         target_data = np.array(
             target_data[0]
         )  # Extract the first element if it's a nested list
-        target_data = np.squeeze(target_data, axis=1)  # Remove unnecessary dimensions
+        if target_data.shape[1] == 1:  # Check if the second dimension is 1
+            target_data = np.squeeze(target_data, axis=1)
+
+        # target_data = np.squeeze(target_data, axis=1)  # Remove unnecessary dimensions
 
     # Ensure target_data is in the correct shape
     if (
@@ -160,14 +152,6 @@ def denormalize_target_data(target_data, scalers=None):
 
     with open("scalers.pkl", "rb") as f:
         scalers = pickle.load(f)
-
-    # If scalers are not provided, create new scalers and fit them (dummy fit)
-    # if scalers is None:
-    #     print("Scalers not provided. Initializing MinMaxScaler for each column.")
-    #     scalers = [MinMaxScaler() for _ in range(n_columns)]
-    #     # Dummy fit (assuming normalized data was initially scaled between 0 and 1)
-    #     for i in range(n_columns):
-    #         scalers[i].fit(np.array([[0], [1]]))  # Fit to [0, 1] range
 
     # Ensure the number of scalers matches the number of columns
     assert (
@@ -189,10 +173,6 @@ def denormalize_target_data(target_data, scalers=None):
     return denormalized_data
 
 
-import pickle
-import numpy as np
-
-
 def renormalize_data_column_wise(data):
     """
     Normalize a 2D dataset column-wise using MinMaxScaler.
@@ -211,7 +191,7 @@ def renormalize_data_column_wise(data):
 
     # Normalize each column
     normalized_columns = [
-        scalers[i].fit_transform(data[:, i].reshape(-1, 1)) for i in range(n_features)
+        scalers[i].transform(data[:, i].reshape(-1, 1)) for i in range(n_features)
     ]
 
     # Combine normalized columns back into a single array
@@ -219,3 +199,19 @@ def renormalize_data_column_wise(data):
 
     print("Normalization complete.")
     return normalized_data
+
+
+def calculate_prediction_accuracy(predictions, actuals):
+    """
+    Calculate prediction accuracy as the inverse of Mean Absolute Error (MAE).
+
+    :param predictions: List of predicted values (numpy arrays).
+    :param actuals: List of actual target values (numpy arrays).
+    :return: List of accuracies for each dataset.
+    """
+    accuracies = []
+    for pred, act in zip(predictions, actuals):
+        mae = np.mean(np.abs(np.array(pred) - np.array(act)))
+        accuracy = 1 - mae  # Accuracy metric as (1 - Mean Absolute Error)
+        accuracies.append(accuracy)
+    return accuracies
