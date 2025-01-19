@@ -1,7 +1,6 @@
 import torch as pt
 from FCNN import FCNNModel
 from LSTM import LSTMModel
-
 from autoregress_train import train, test
 from utils import (
     set_seed,
@@ -10,312 +9,265 @@ from utils import (
     denormalize_target_data,
     renormalize_data_column_wise,
     calculate_prediction_accuracy,
+    calculate_prediction_accuracy_foreach_feature,
 )
 from hyperparameter_tuning import hyperparameter_tuning
-
-
 from plots import (
     plot_loss,
-    plot_dataframe_columns_combined,
+    plot_selected_columns,
     compute_scaled_l2_loss_scatter,
-    calculate_and_plot_prediction_accuracy_with_error_bars,
+    compute_scaled_l2_loss_scatter,
     prediction_accuracy_with_error_bars_each_feature,
-    plot_l2_norm_error_vs_epochs,
-    plot_l2_norm_with_shaded_regions,
+    plot_3d_frequency_amplitude_accuracy,
 )
 import numpy as np
 import optuna.visualization as vis
+from Data_pipeline import process_all_simulations
 
-from hyperparameter_tuning import hyperparameter_tuning
-
-
-# Example of training loop over multiple epochs and sequences
+# Main execution block
 if __name__ == "__main__":
 
-    test_mode = True
-    hyperparameter_tune = False
+    # Flags to toggle modes
+    enable_testing_mode = False
+    enable_hyperparameter_tuning = True
 
-    # Set model type
-    model = LSTMModel
-    # Set model parameters
-    n_features = 15
-    n_outputs = 14
-    n_layers = 5
-    n_neurons = 256
+    # Model and architecture settings
+    model_type = LSTMModel
+    input_features = 15
+    output_features = 14
+    num_hidden_layers = 3
+    hidden_layer_neurons = 64
     sequence_length = 5
-    n_steps = 600 - sequence_length
+    prediction_steps = 600 - sequence_length
 
-    # Set training parameters
-    n_epochs = 80
-    learning_rate = 0.0001
-    batch_Size = 6
-    save_path = "./lstm_test"
+    # Training parameters
+    num_epochs = 200
+    learning_rate = 1e-5
+    batch_size = 4
+    model_save_directory = "./FCNN_JAN"
     early_stopping_patience = 30
-    test_size = 0.25
-    start_sampling_prob = 0.0
-    sampling_schedule_type = "constant"
+    data_split_test_ratio = 0.25
+    initial_sampling_probability = 0.0
+    sampling_strategy = "constant"
 
-    set_seed(20)
+    # Seed configuration for reproducibility
+    random_seeds = [42]
 
-    # Hyperparameter tuning parameters
-    n_trails = 15
-    model_type = "FCNN"
-    save_path_hyperparameter_tuning = "./fcnn_hyperparameter_tuning"
+    # Hyperparameter tuning configuration
+    num_trials = 25
+    tuning_model_type = "FCNN"
+    tuning_save_directory = "./fcnn_hyperparameter_tuning"
 
-    # test model path
-    model_path = "./lstm_test/lstm_test_best_model.pth"
-    test_single_data = False
-    save_dir = "lstm_test"
+    # Paths for testing and data
+    pretrained_model_directory = "./FCNN_JAN/"
+    enable_test_single_sequence = True
+    test_results_save_directory = "FCNN_JAN"
 
-    # Check for GPU
+    # Device selection
     device = pt.device("cuda" if pt.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    if test_mode:
-        # Load and prepare training data
-        from Data_pipeline import process_all_simulations
+    # Data directory path
+    simulation_data_directory = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\RE_100"
 
-        main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\RE_100"
-        all_dataframes = process_all_simulations(
-            main_path, train=False, test_size=test_size, dt=0.01
+    # Load and preprocess all simulations
+    all_simulations_dataframes = process_all_simulations(
+        simulation_data_directory, dt=0.01
+    )
+
+    if enable_testing_mode:
+        # Split data for training and testing
+        training_data, testing_data = split_dataset(
+            all_simulations_dataframes, test_size=data_split_test_ratio
         )
 
-        if test_single_data:
-            actual_data = all_dataframes[1]
-            data = renormalize_data_column_wise(actual_data)
-        else:
-            data = all_dataframes
-            for i in range(len(data)):
-                data[i] = renormalize_data_column_wise(data[i])
+        print("Testing :", testing_data)
 
-        if model is FCNNModel:
-            model = FCNNModel(
-                n_outputs=n_outputs,
-                n_layers=n_layers,
-                n_neurons=n_neurons,
+        seed_accuracies = []
+
+        for seed in random_seeds:
+
+            if enable_test_single_sequence:
+                # Process single training sequence
+                testing_data = renormalize_data_column_wise(testing_data[0])
+            else:
+                # Process the full test dataset
+                testing_data = [renormalize_data_column_wise(df) for df in testing_data]
+
+            # Initialize model based on type
+            if model_type is FCNNModel:
+                model = FCNNModel(
+                    n_outputs=output_features,
+                    n_layers=num_hidden_layers,
+                    n_neurons=hidden_layer_neurons,
+                    sequence_length=sequence_length,
+                    n_features=input_features,
+                )
+            elif model_type is LSTMModel:
+                model = LSTMModel(
+                    n_features=input_features,
+                    hidden_size=hidden_layer_neurons,
+                    num_layers=num_hidden_layers,
+                    n_outputs=output_features,
+                    sequence_length=sequence_length,
+                )
+
+            # Load pretrained model
+            model_path = f"{pretrained_model_directory}{seed}_best_model.pth"
+            checkpoint = pt.load(model_path)
+
+            if "state_dict" in checkpoint:
+                model.load_state_dict(checkpoint["state_dict"])
+            else:
+                model.load_state_dict(checkpoint)
+
+            # Loss function for evaluation
+            loss_criterion = pt.nn.MSELoss()
+
+            # Test the model
+            average_test_loss, predictions, ground_truth, frequency, amplitude = test(
+                model=model,
+                n_steps=prediction_steps,
+                n_features=input_features,
+                test_Data=testing_data,
                 sequence_length=sequence_length,
-                n_features=n_features,
-            )
-        elif model is LSTMModel:
-            model = LSTMModel(
-                n_features=n_features,
-                hidden_size=n_neurons,
-                num_layers=n_layers,
-                n_outputs=n_outputs,
-                sequence_length=sequence_length,
+                criterion=loss_criterion,
+                test_single=enable_test_single_sequence,
             )
 
-        # Load the state dictionary
-        model.load_state_dict(pt.load(model_path))
+            # Post-process predictions and evaluate accuracy
+            if enable_test_single_sequence:
+                predictions = denormalize_target_data(predictions)
+                ground_truth = denormalize_target_data(ground_truth)
 
-        checkpoint = pt.load(model_path)
+                predictions = np.array(predictions).reshape(prediction_steps, 14)
+                ground_truth = np.array(ground_truth).reshape(prediction_steps, 14)
 
-        # Check if it's a state_dict or a checkpoint
-        if "state_dict" in checkpoint:
-            model.load_state_dict(checkpoint["state_dict"])
-        else:
-            model.load_state_dict(checkpoint)
+                print(f"Average test loss: {average_test_loss:.4f}")
 
-        criterion = pt.nn.MSELoss()
+                initial_inputs = training_data[0][:sequence_length, :-1]
+                predictions = np.vstack((initial_inputs, predictions))
+                ground_truth = np.vstack((initial_inputs, ground_truth))
 
-        avg_test_loss, all_predictions, all_actuals = test(
-            model=model,
-            n_steps=n_steps,
-            n_features=n_features,
-            test_Data=data,
-            sequence_length=sequence_length,
-            criterion=criterion,
-            test_single=test_single_data,
-        )
+                plot_selected_columns(
+                    ground_truth,
+                    predictions,
+                    save_dir=test_results_save_directory,
+                    plot_name=seed,
+                )
 
-        if test_single_data:
-            all_predictions = denormalize_target_data(all_predictions)
-            all_actuals = denormalize_target_data(all_actuals)
+                compute_scaled_l2_loss_scatter(
+                    ground_truth,
+                    predictions,
+                    save_dir=test_results_save_directory,
+                    plot_name=seed,
+                )
 
-            all_predictions = np.array(all_predictions)
-            all_actuals = np.array(all_actuals)
+            else:
+                predictions = [denormalize_target_data(pred) for pred in predictions]
+                ground_truth = [denormalize_target_data(gt) for gt in ground_truth]
+                # extract frequency and amplitude
 
-            all_predictions = all_predictions.reshape(n_steps, 14)
-            all_actuals = all_actuals.reshape(n_steps, 14)
+                frequency = [f[0] for f in frequency]
+                amplitude = [a[0] for a in amplitude]
 
-            print(f"Average test loss: {avg_test_loss:.4f}")
-            print(f"Predictions shape: {all_predictions}")
-            print(f"Actuals shape: {all_actuals}")
+                cd_accuracy = calculate_prediction_accuracy_foreach_feature(
+                    predictions, ground_truth, column=2
+                )
 
-            all_actuals = actual_data[sequence_length : sequence_length + n_steps, :14]
+                accuracies = calculate_prediction_accuracy(ground_truth, predictions)
 
-            # Plot the predictions and actuals
-            plot_dataframe_columns_combined(
-                all_actuals, all_predictions, save_dir=save_dir
-            )
+                plot_3d_frequency_amplitude_accuracy(frequency, amplitude, cd_accuracy)
 
-            compute_scaled_l2_loss_scatter(
-                all_actuals, all_predictions, save_dir=save_dir
-            )
-        else:
-            for i in range(len(all_predictions)):
-                all_predictions[i] = denormalize_target_data(all_predictions[i])
-                # all_actuals[i] = all_dataframes[i][
-                #     sequence_length : sequence_length + n_steps, :14
-                # ]
-                all_actuals[i] = denormalize_target_data(all_actuals[i])
+                # compute_scaled_l2_loss_scatter(
+                #     predictions, ground_truth, save_dir=test_results_save_directory
+                # )
 
-            accuracies = calculate_prediction_accuracy(all_actuals, all_predictions)
+                prediction_accuracy_with_error_bars_each_feature(
+                    predictions, ground_truth, save_dir=test_results_save_directory
+                )
 
-            calculate_and_plot_prediction_accuracy_with_error_bars(
-                all_predictions, all_actuals, save_dir=save_dir
-            )
+                seed_accuracies.append(sum(accuracies) / len(accuracies))
 
-            prediction_accuracy_with_error_bars_each_feature(
-                all_predictions, all_actuals, save_dir=save_dir
-            )
+                print(f"Accuracies for seed {seed}: {accuracies}")
 
-            # Compute the mean
-            average_accuracy = sum(accuracies) / len(accuracies)
-
-            print("Average Accuracy:", average_accuracy)
-
-            # plot_prediction_accuracy_with_error_bars(accuracies, save_dir="fcnn_test")
-
-            print(accuracies)
-
-        # all_predictions = denormalize_target_data(all_predictions)
-
-        # plot_dataframe_columns_heatmap(all_actuals, all_predictions, save_dir="test")
-        # compute_scaled_l2_loss_heatmap(all_actuals, all_predictions, save_dir="test1")
-
-        exit(0)
+        print("Average accuracies across seeds:", seed_accuracies)
 
     else:
-        # Load and prepare training data
-        from Data_pipeline import process_all_simulations
-
-        main_path = r"D:\Research Project\Analysis-of-neural-network-architectures-for-predicting-time-series-data-from-simulations\RE_100"
-        all_dataframes = process_all_simulations(
-            main_path, train=True, test_size=test_size, dt=0.01
-        )
-
-        # Instantiate the model
-        if model is FCNNModel:
-            model = FCNNModel(
-                n_outputs=n_outputs,
-                n_layers=n_layers,
-                n_neurons=n_neurons,
-                sequence_length=sequence_length,
-                n_features=n_features,
-            )
-        elif model is LSTMModel:
-            model = LSTMModel(
-                n_features=n_features,
-                hidden_size=n_neurons,
-                num_layers=n_layers,
-                n_outputs=n_outputs,
-                sequence_length=sequence_length,
-            )
-
-        optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
-        criterion = pt.nn.MSELoss()
-        # all_dataframes = normalize_data(
-        #     all_dataframes, sequence_length, n_steps, n_features
-        # )
-
-        all_dataframes = normalize_column_data(
-            all_dataframes, sequence_length, n_steps, n_features
-        )
-
-        # all_dataframes = data_rearrange(
-        #     train_data, sequence_length, n_steps, n_features
-        # )
-        train_data, val_data = split_dataset(all_dataframes)
-
-        if hyperparameter_tune:
-            fcnn_study = hyperparameter_tuning(
-                best_model_type=model_type,
-                train_data=train_data,
-                val_data=val_data,
-                n_outputs=n_outputs,
-                sequence_length=sequence_length,
-                n_features=n_features,
-                n_steps=n_steps,
-                n_trails=n_trails,
-                device=device,
-                save_path=save_path_hyperparameter_tuning,
-            )
-
-            print(f"Best trial: {fcnn_study.best_trial.number}")
-            print(f"Best parameters: {fcnn_study.best_trial.params}")
-            print(f"Best value: {fcnn_study.best_value}")
-
-            # Visualize the study
-            vis.plot_optimization_history(fcnn_study).show()
-            vis.plot_param_importances(fcnn_study).show()
-            vis.plot_slice(fcnn_study).show()
-            vis.plot_parallel_coordinate(fcnn_study).show()
-            vis.plot_contour(fcnn_study).show()
-            vis.plot_edf(fcnn_study).show()
-            vis.plot_intermediate_values(fcnn_study).show()
-
-            lstm_study = hyperparameter_tuning(
-                "LSTM",
-                train_data,
-                val_data,
-                n_outputs,
-                sequence_length,
-                n_features,
-                n_steps,
-                n_trails=n_trails,
-            )
-
-            print(f"Best trial: {lstm_study.best_trial.number}")
-            print(f"Best parameters: {lstm_study.best_trial.params}")
-            print(f"Best value: {lstm_study.best_value}")
-
-            # Visualize the study
-            vis.plot_optimization_history(lstm_study).show()
-            vis.plot_param_importances(lstm_study).show()
-            vis.plot_slice(lstm_study).show()
-            vis.plot_parallel_coordinate(lstm_study).show()
-            vis.plot_contour(lstm_study).show()
-            vis.plot_edf(lstm_study).show()
-
-            print("Hyperparameter tuning complete.")
-            exit(0)
-
-        train_l2_norm_errors, val_l2_norm_errors, train_losses, val_losses = train(
-            model,
-            n_epochs,
-            n_steps,
-            n_features,
-            train_data,
-            val_data,
+        # Normalize and prepare data for training
+        normalized_data = normalize_column_data(
+            all_simulations_dataframes,
             sequence_length,
-            optimizer,
-            criterion,
-            batch_size=batch_Size,
-            save_path=save_path,
-            patience=early_stopping_patience,
-            shuffle=True,
-            start_sampling_prob=start_sampling_prob,
-            sampling_schedule_type=sampling_schedule_type,
-            device=device,
+            prediction_steps,
+            input_features,
+        )
+        train_data, validation_data = split_dataset(
+            normalized_data, test_size=data_split_test_ratio
         )
 
-        # Plot the losses after training
-        plot_loss(train_losses, val_losses, f"{save_path}")
+        for seed in random_seeds:
+            print(f"Training with seed: {seed}")
+            set_seed(seed)
 
-        # # Plot the L2 norm errors after training
-        # plot_l2_norm_error_vs_epochs(
-        #     train_l2_norm_errors,
-        #     val_l2_norm_errors,
-        #     f"{save_path}_l2_norm_error_plot.png",
-        # )
+            # Instantiate the model
+            if model_type is FCNNModel:
+                model = FCNNModel(
+                    n_outputs=output_features,
+                    n_layers=num_hidden_layers,
+                    n_neurons=hidden_layer_neurons,
+                    sequence_length=sequence_length,
+                    n_features=input_features,
+                )
+            elif model_type is LSTMModel:
+                model = LSTMModel(
+                    n_features=input_features,
+                    hidden_size=hidden_layer_neurons,
+                    num_layers=num_hidden_layers,
+                    n_outputs=output_features,
+                    sequence_length=sequence_length,
+                )
 
-        # # Plot the L2 norm errors with shaded regions
-        # plot_l2_norm_with_shaded_regions(
-        #     train_l2_norm_errors,
-        #     val_l2_norm_errors,
-        #     epochs=n_epochs,
-        #     save_dir=f"save_path",
-        # )
+            optimizer = pt.optim.Adam(model.parameters(), lr=learning_rate)
+            loss_criterion = pt.nn.MSELoss()
+
+            if enable_hyperparameter_tuning:
+                tuning_results = hyperparameter_tuning(
+                    best_model_type=tuning_model_type,
+                    train_data=train_data,
+                    val_data=validation_data,
+                    n_outputs=output_features,
+                    sequence_length=sequence_length,
+                    n_features=input_features,
+                    n_steps=prediction_steps,
+                    n_trails=num_trials,
+                    device=device,
+                    save_path=tuning_save_directory,
+                )
+
+                print(f"Best hyperparameters: {tuning_results.best_trial.params}")
+                continue
+
+            # Train the model
+            _, _, training_loss, validation_loss = train(
+                model=model,
+                n_epochs=num_epochs,
+                n_steps=prediction_steps,
+                n_features=input_features,
+                train_Data_preprocessed=train_data,
+                val_Data_preprocessed=validation_data,
+                sequence_length=sequence_length,
+                optimizer=optimizer,
+                criterion=loss_criterion,
+                batch_size=batch_size,
+                save_path=model_save_directory,
+                model_name=str(seed),
+                patience=early_stopping_patience,
+                shuffle=True,
+                start_sampling_prob=initial_sampling_probability,
+                sampling_schedule_type=sampling_strategy,
+                device=device,
+            )
+
+            plot_loss(training_loss, validation_loss, f"{model_save_directory}", seed)
 
         print("Training complete.")

@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from typing import Tuple, List
-from utils import split_dataset
+from utils import split_dataset, normalize_column_data
 
 
 def extract_force_coefficients(filepath: str) -> pd.DataFrame:
@@ -118,12 +118,17 @@ def create_simulation_dataframe(sim_dir: str, dt: float) -> pd.DataFrame:
     # Calculate rotational speeds for simulation data using simulation's amplitude and frequency
     rotational_speeds_df = calculate_rotational_speed(amplitude, frequency, times)
 
+    amplitude = pd.DataFrame({"amplitude": [amplitude] * num_rows})
+    frequency = pd.DataFrame({"frequency": [frequency] * num_rows})
+
     # Concatenate force, probe, and rotational speed data
     final_df = pd.concat(
         [
             sim_force_df.reset_index(drop=True),
             sim_probe_df.reset_index(drop=True),
             rotational_speeds_df,
+            # amplitude,
+            # frequency,
         ],
         axis=1,
     )
@@ -133,7 +138,13 @@ def create_simulation_dataframe(sim_dir: str, dt: float) -> pd.DataFrame:
     # final_df = sim_combined_df
 
     # Select only the required columns that exist in final_df
-    required_columns = ["Cd", "Cl"] + list(sim_probe_df.columns) + ["rotational_speed"]
+    required_columns = (
+        ["Cd", "Cl"]
+        + list(sim_probe_df.columns)
+        + ["rotational_speed"]
+        # + ["amplitude"]
+        # + ["frequency"]
+    )
     final_df = final_df[required_columns]
 
     # print(final_df.head())  # Display first few rows of the combined DataFrame
@@ -142,7 +153,8 @@ def create_simulation_dataframe(sim_dir: str, dt: float) -> pd.DataFrame:
 
 
 def process_all_simulations(
-    base_path: str, train: bool, test_size: float, dt: float
+    base_path: str,
+    dt: float,
 ) -> List[Tuple[np.ndarray, np.ndarray]]:
     """Processes all simulations in the exercises directory, combining base and simulation data."""
 
@@ -169,37 +181,12 @@ def process_all_simulations(
         break
 
     new_dataframes = []
-    # for data in dataframes:
-    #     new_data = data[400:1001]
-    #     new_dataframes.append(new_data)
 
     for i in range(len(dataframes)):
         new_data = dataframes[i][400:1001]
         new_dataframes.append(new_data)
 
-    # Split data into training and testing sets
-    train_data, test_data = split_dataset(new_dataframes, test_size=test_size)
-
-    # import pickle
-
-    # # Save train and test data
-    # with open("train_data.pkl", "wb") as f:
-    #     pickle.dump(train_data, f)
-
-    # with open("test_data.pkl", "wb") as f:
-    #     pickle.dump(test_data, f)
-
-    # # Load train and test data
-    # with open("train_data.pkl", "rb") as f:
-    #     train_data_loaded = pickle.load(f)
-
-    # with open("test_data.pkl", "rb") as f:
-    #     test_data_loaded = pickle.load(f)
-
-    if train:
-        return train_data
-    else:
-        return test_data
+    return new_dataframes
 
 
 # # Define the main path for the exercises directory
