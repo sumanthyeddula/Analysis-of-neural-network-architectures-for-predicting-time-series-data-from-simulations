@@ -287,3 +287,58 @@ def calculate_prediction_accuracy_foreach_feature(predictions, actuals, column=0
         accuracies.append(accuracy)
 
     return accuracies
+
+
+def calculate_prediction_accuracy_per_column(predictions, actuals):
+    """
+    Calculate normalized prediction accuracy as 1 - Normalized Mean Absolute Error (MAE)
+    for each column of predictions and actuals.
+
+    :param predictions: List or array of predicted values.
+    :param actuals: List or array of actual ground truth values.
+    :return: Array of accuracies for each column.
+    """
+    # Ensure predictions and actuals are NumPy arrays
+    predictions = np.array(predictions)
+    actuals = np.array(actuals)
+
+    # Ensure the shapes are consistent
+    if predictions.shape != actuals.shape:
+        raise ValueError("Predictions and actuals must have the same shape.")
+
+    # Number of columns
+    n_columns = (
+        predictions.shape[2] if len(predictions.shape) == 3 else predictions.shape[1]
+    )
+
+    # Calculate accuracy for each column
+    accuracies = []
+    for column in range(n_columns):
+        column_accuracies = []
+        for idx, (pred, act) in enumerate(zip(predictions, actuals)):
+            # Select the specified column of actual and predicted values
+            act_col = np.array(act)[:, column]
+            pred_col = np.array(pred)[:, column]
+
+            # Calculate Mean Absolute Error (MAE)
+            mae = np.mean(np.abs(pred_col - act_col))
+
+            # Calculate range of actual values
+            range_act = np.ptp(act_col)  # np.ptp = max - min
+
+            # Handle small range or perfect match cases
+            if range_act > 1e-6:  # Avoid division by very small numbers
+                mae_normalized = mae / range_act
+                accuracy = 1 - mae_normalized
+            else:
+                accuracy = 1.0 if mae < 1e-6 else 0.0  # Perfect match or invalid case
+
+            # Clamp accuracy to [0, 1] to avoid unexpected negatives
+            accuracy = max(0.0, min(accuracy, 1.0))
+
+            column_accuracies.append(accuracy)
+
+        # Store accuracies for the current column
+        accuracies.append(column_accuracies)
+
+    return np.array(accuracies)

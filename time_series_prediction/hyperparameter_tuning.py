@@ -22,21 +22,22 @@ def hyperparameter_tuning(
     n_trails=50,
     device="cpu",
     save_path=".",
+    seed=42,
+    patience=5,
+    n_epochs=25,
 ):
 
     if best_model_type == "FCNN":
 
         def fcnn_objective(trial):
-            seed = trial.suggest_int("seed", 0, 100)
-            n_layers = trial.suggest_int("n_layers", 1, 7)
+            # seed = trial.suggest_int("seed", 0, 100)
+            n_layers = trial.suggest_int("n_layers", 3, 7)
             n_neurons = trial.suggest_int("n_neurons", 32, 256, log=True)
             learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
             batch_size = trial.suggest_int("batch_size", 16, 128, log=True)
-            n_epochs = trial.suggest_int("n_epochs", 5, 15)
-            patience = trial.suggest_int("patience", 3, 10)
+            # n_epochs = trial.suggest_int("n_epochs", 5, 15)
+            # patience = trial.suggest_int("patience", 3, 10)
             # start_sampling_prob = trial.suggest_float("start_sampling_prob", 0.1, 1.0)
-
-            set_seed(seed)
 
             model = FCNNModel(
                 n_outputs=n_outputs,
@@ -51,7 +52,7 @@ def hyperparameter_tuning(
             optimizer = Adam(model.parameters(), lr=learning_rate)
 
             try:
-                trainL2, valL2, _, val_losses = train(
+                _, val_losses = train(
                     model=model,
                     n_epochs=n_epochs,
                     n_steps=n_steps,
@@ -96,15 +97,13 @@ def hyperparameter_tuning(
     if best_model_type == "LSTM":
 
         def lstm_objective(trial):
-            seed = trial.suggest_int("seed", 0, 1000)
+            # seed = trial.suggest_int("seed", 0, 1000)
             hidden_size = trial.suggest_int("hidden_size", 32, 256, log=True)
             num_layers = trial.suggest_int("num_layers", 1, 3)
             learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
             batch_size = trial.suggest_int("batch_size", 16, 128, log=True)
-            n_epochs = trial.suggest_int("n_epochs", 5, 50)
-            patience = trial.suggest_int("patience", 3, 10)
-
-            set_seed(seed)
+            # n_epochs = trial.suggest_int("n_epochs", 5, 50)
+            # patience = trial.suggest_int("patience", 3, 10)
 
             model = LSTMModel(
                 n_features=n_features,
@@ -118,7 +117,7 @@ def hyperparameter_tuning(
             optimizer = Adam(model.parameters(), lr=learning_rate)
 
             try:
-                trainL2, valL2, _, val_losses = train(
+                _, val_losses = train(
                     model=model,
                     n_epochs=n_epochs,
                     n_steps=n_steps,

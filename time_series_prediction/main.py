@@ -10,6 +10,7 @@ from utils import (
     renormalize_data_column_wise,
     calculate_prediction_accuracy,
     calculate_prediction_accuracy_foreach_feature,
+    calculate_prediction_accuracy_per_column,
 )
 from hyperparameter_tuning import hyperparameter_tuning
 from plots import (
@@ -19,6 +20,9 @@ from plots import (
     compute_scaled_l2_loss_scatter,
     prediction_accuracy_with_error_bars_each_feature,
     plot_3d_frequency_amplitude_accuracy,
+    plot_contour_frequency_amplitude_accuracy,
+    plot_contour_accuracy_for_features_array,
+    plot_optimization_results,
 )
 import numpy as np
 import optuna.visualization as vis
@@ -28,22 +32,22 @@ from Data_pipeline import process_all_simulations
 if __name__ == "__main__":
 
     # Flags to toggle modes
-    enable_testing_mode = False
-    enable_hyperparameter_tuning = True
+    enable_testing_mode = True
+    enable_hyperparameter_tuning = False
 
     # Model and architecture settings
-    model_type = LSTMModel
+    model_type = FCNNModel
     input_features = 15
     output_features = 14
     num_hidden_layers = 3
-    hidden_layer_neurons = 64
+    hidden_layer_neurons = 155
     sequence_length = 5
     prediction_steps = 600 - sequence_length
 
     # Training parameters
-    num_epochs = 200
-    learning_rate = 1e-5
-    batch_size = 4
+    num_epochs = 2
+    learning_rate = 0.0005
+    batch_size = 30
     model_save_directory = "./FCNN_JAN"
     early_stopping_patience = 30
     data_split_test_ratio = 0.25
@@ -51,16 +55,17 @@ if __name__ == "__main__":
     sampling_strategy = "constant"
 
     # Seed configuration for reproducibility
-    random_seeds = [42]
+    random_seeds = [53]
 
     # Hyperparameter tuning configuration
-    num_trials = 25
+    num_trials = 5
+    num_hyper_epochs = 2
     tuning_model_type = "FCNN"
     tuning_save_directory = "./fcnn_hyperparameter_tuning"
 
     # Paths for testing and data
     pretrained_model_directory = "./FCNN_JAN/"
-    enable_test_single_sequence = True
+    enable_test_single_sequence = False
     test_results_save_directory = "FCNN_JAN"
 
     # Device selection
@@ -92,7 +97,10 @@ if __name__ == "__main__":
                 testing_data = renormalize_data_column_wise(testing_data[0])
             else:
                 # Process the full test dataset
-                testing_data = [renormalize_data_column_wise(df) for df in testing_data]
+                testing_data = [
+                    renormalize_data_column_wise(df)
+                    for df in all_simulations_dataframes
+                ]
 
             # Initialize model based on type
             if model_type is FCNNModel:
@@ -168,16 +176,32 @@ if __name__ == "__main__":
                 ground_truth = [denormalize_target_data(gt) for gt in ground_truth]
                 # extract frequency and amplitude
 
-                frequency = [f[0] for f in frequency]
-                amplitude = [a[0] for a in amplitude]
+                frequency = [f[0][0] for f in frequency]
+                amplitude = [a[0][0] for a in amplitude]
 
                 cd_accuracy = calculate_prediction_accuracy_foreach_feature(
-                    predictions, ground_truth, column=2
+                    predictions, ground_truth, column=0
+                )
+
+                accuracies_for_each_feature = calculate_prediction_accuracy_per_column(
+                    predictions, ground_truth
                 )
 
                 accuracies = calculate_prediction_accuracy(ground_truth, predictions)
 
-                plot_3d_frequency_amplitude_accuracy(frequency, amplitude, cd_accuracy)
+                # plot_3d_frequency_amplitude_accuracy(frequency, amplitude, cd_accuracy)
+
+                plot_contour_frequency_amplitude_accuracy(
+                    frequency, amplitude, cd_accuracy
+                )
+
+                plot_contour_accuracy_for_features_array(
+                    frequency,
+                    amplitude,
+                    accuracies_for_each_feature,
+                    save_dir=test_results_save_directory,
+                    plot_name=seed,
+                )
 
                 # compute_scaled_l2_loss_scatter(
                 #     predictions, ground_truth, save_dir=test_results_save_directory
@@ -242,13 +266,20 @@ if __name__ == "__main__":
                     n_trails=num_trials,
                     device=device,
                     save_path=tuning_save_directory,
+                    seed=seed,
+                    patience=early_stopping_patience,
+                    n_epochs=num_hyper_epochs,
                 )
 
                 print(f"Best hyperparameters: {tuning_results.best_trial.params}")
+
+                # Plot optimization results
+                plot_optimization_results(tuning_results, tuning_model_type)
+
                 continue
 
             # Train the model
-            _, _, training_loss, validation_loss = train(
+            training_loss, validation_loss = train(
                 model=model,
                 n_epochs=num_epochs,
                 n_steps=prediction_steps,
