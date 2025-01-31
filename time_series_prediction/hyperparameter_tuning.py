@@ -31,10 +31,10 @@ def hyperparameter_tuning(
 
         def fcnn_objective(trial):
             # seed = trial.suggest_int("seed", 0, 100)
-            n_layers = trial.suggest_int("n_layers", 3, 7)
+            n_layers = trial.suggest_int("n_layers", 3, 9)
             n_neurons = trial.suggest_int("n_neurons", 32, 256, log=True)
-            learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
-            batch_size = trial.suggest_int("batch_size", 16, 128, log=True)
+            learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
+            batch_size = trial.suggest_int("batch_size", 24, 128, log=True)
             # n_epochs = trial.suggest_int("n_epochs", 5, 15)
             # patience = trial.suggest_int("patience", 3, 10)
             # start_sampling_prob = trial.suggest_float("start_sampling_prob", 0.1, 1.0)
@@ -99,9 +99,9 @@ def hyperparameter_tuning(
         def lstm_objective(trial):
             # seed = trial.suggest_int("seed", 0, 1000)
             hidden_size = trial.suggest_int("hidden_size", 32, 256, log=True)
-            num_layers = trial.suggest_int("num_layers", 1, 3)
-            learning_rate = trial.suggest_float("learning_rate", 1e-4, 1e-2, log=True)
-            batch_size = trial.suggest_int("batch_size", 16, 128, log=True)
+            num_layers = trial.suggest_int("num_layers", 3, 7)
+            learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
+            batch_size = trial.suggest_int("batch_size", 32, 128, log=True)
             # n_epochs = trial.suggest_int("n_epochs", 5, 50)
             # patience = trial.suggest_int("patience", 3, 10)
 
@@ -128,7 +128,7 @@ def hyperparameter_tuning(
                     optimizer=optimizer,
                     criterion=criterion,
                     batch_size=batch_size,
-                    save_path=f"lstm_trial_{trial.number}",
+                    save_path=f"{save_path}",
                     model_name=seed,
                     patience=patience,
                     start_sampling_prob=0.0,

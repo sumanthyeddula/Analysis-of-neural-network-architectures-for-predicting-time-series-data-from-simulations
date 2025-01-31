@@ -386,7 +386,7 @@ def train(
         else:
             early_stop_counter += 1
 
-        plot_loss(train_losses, val_losses, f"{save_path}", model_name)
+        # plot_loss(train_losses, val_losses, f"{save_path}", model_name)
 
         if early_stop_counter >= patience:
             print("Early stopping triggered.")

@@ -127,8 +127,8 @@ def create_simulation_dataframe(sim_dir: str, dt: float) -> pd.DataFrame:
             sim_force_df.reset_index(drop=True),
             sim_probe_df.reset_index(drop=True),
             rotational_speeds_df,
-            amplitude,
-            frequency,
+            # amplitude,
+            # frequency,
         ],
         axis=1,
     )
@@ -142,8 +142,8 @@ def create_simulation_dataframe(sim_dir: str, dt: float) -> pd.DataFrame:
         ["Cd", "Cl"]
         + list(sim_probe_df.columns)
         + ["rotational_speed"]
-        + ["amplitude"]
-        + ["frequency"]
+        # + ["amplitude"]
+        # + ["frequency"]
     )
     final_df = final_df[required_columns]
 

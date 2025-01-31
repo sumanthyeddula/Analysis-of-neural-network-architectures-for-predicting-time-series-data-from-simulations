@@ -36,37 +36,37 @@ if __name__ == "__main__":
     enable_hyperparameter_tuning = False
 
     # Model and architecture settings
-    model_type = FCNNModel
+    model_type = LSTMModel
     input_features = 15
     output_features = 14
     num_hidden_layers = 3
-    hidden_layer_neurons = 155
+    hidden_layer_neurons = 254
     sequence_length = 5
     prediction_steps = 600 - sequence_length
 
     # Training parameters
-    num_epochs = 2
-    learning_rate = 0.0005
-    batch_size = 30
-    model_save_directory = "./FCNN_JAN"
+    num_epochs = 200
+    learning_rate = 0.00010368520095010249
+    batch_size = 46
+    model_save_directory = "./LSTM_FEB"
     early_stopping_patience = 30
     data_split_test_ratio = 0.25
     initial_sampling_probability = 0.0
     sampling_strategy = "constant"
 
     # Seed configuration for reproducibility
-    random_seeds = [53]
+    random_seeds = [30]
 
     # Hyperparameter tuning configuration
-    num_trials = 5
-    num_hyper_epochs = 2
-    tuning_model_type = "FCNN"
-    tuning_save_directory = "./fcnn_hyperparameter_tuning"
+    num_trials = 20
+    num_hyper_epochs = 15
+    tuning_model_type = "LSTM"
+    tuning_save_directory = "./lstm_hyperparameter"
 
     # Paths for testing and data
-    pretrained_model_directory = "./FCNN_JAN/"
-    enable_test_single_sequence = False
-    test_results_save_directory = "FCNN_JAN"
+    pretrained_model_directory = "./LSTM_FEB/"
+    enable_test_single_sequence = True
+    test_results_save_directory = "LSTM_FEB"
 
     # Device selection
     device = pt.device("cuda" if pt.cuda.is_available() else "cpu")
@@ -90,14 +90,16 @@ if __name__ == "__main__":
 
         seed_accuracies = []
 
+        Data = testing_data[7]
+
         for seed in random_seeds:
 
             if enable_test_single_sequence:
                 # Process single training sequence
-                testing_data = renormalize_data_column_wise(testing_data[0])
+                test_data = renormalize_data_column_wise(Data)
             else:
                 # Process the full test dataset
-                testing_data = [
+                test_data = [
                     renormalize_data_column_wise(df)
                     for df in all_simulations_dataframes
                 ]
@@ -137,7 +139,7 @@ if __name__ == "__main__":
                 model=model,
                 n_steps=prediction_steps,
                 n_features=input_features,
-                test_Data=testing_data,
+                test_Data=test_data,
                 sequence_length=sequence_length,
                 criterion=loss_criterion,
                 test_single=enable_test_single_sequence,
@@ -153,9 +155,12 @@ if __name__ == "__main__":
 
                 print(f"Average test loss: {average_test_loss:.4f}")
 
-                initial_inputs = training_data[0][:sequence_length, :-1]
+                initial_inputs = Data[:sequence_length, :-1]
                 predictions = np.vstack((initial_inputs, predictions))
                 ground_truth = np.vstack((initial_inputs, ground_truth))
+
+                # predictions = np.vstack((predictions))
+                # ground_truth = np.vstack((ground_truth))
 
                 plot_selected_columns(
                     ground_truth,

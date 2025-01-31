@@ -26,9 +26,97 @@ def plot_loss(train_losses, val_losses, save_path, model_name):
     print(f"Loss plot saved to {save_path}/{model_name}_loss_plot.png")
 
 
+# def plot_selected_columns(labels_data, prediction_data, save_dir=None, plot_name=""):
+#     """
+#     Plot selected columns ('Cd', 'Cl', and probe data) with subplots.
+
+#     :param labels_data: Ground truth data (NumPy array or DataFrame).
+#     :param prediction_data: Predicted data (NumPy array or DataFrame).
+#     :param save_dir: Directory to save the plot. If None, the plot is displayed.
+#     :param plot_name: Name to include in the saved plot file.
+#     """
+#     columns = [
+#         "Cd",
+#         "Cl",
+#         "p_probe_0",
+#         "p_probe_1",
+#         "p_probe_2",
+#         "p_probe_3",
+#         "p_probe_4",
+#         "p_probe_5",
+#         "p_probe_6",
+#         "p_probe_7",
+#         "p_probe_8",
+#         "p_probe_9",
+#         "p_probe_10",
+#         "p_probe_11",
+#     ]
+
+#     ground_truth_df = pd.DataFrame(labels_data, columns=columns)
+#     predictions_df = pd.DataFrame(prediction_data, columns=columns)
+
+#     cd_cl_columns = ["Cd", "Cl"]
+#     probe_columns = [col for col in columns if col not in cd_cl_columns]
+
+#     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+#     for i, column in enumerate(cd_cl_columns):
+#         ax = axes[i]
+#         ax.plot(ground_truth_df[column], label=f"{column} (labels)", linewidth=1.0)
+#         ax.plot(
+#             predictions_df[column],
+#             label=f"{column} (predictions)",
+#             linewidth=1.0,
+#             linestyle="--",
+#         )
+#         ax.set_title(f"{column}")
+#         ax.legend()
+#         ax.grid(True)
+#         ax.set_xlim([400, 1000])
+
+#     plt.tight_layout()
+#     if save_dir:
+#         save_path = f"{save_dir}/{plot_name}_cd_cl_plot.png"
+#         plt.savefig(save_path, dpi=900)
+#         print(f"'Cd' and 'Cl' plot saved to {save_path}")
+#     else:
+#         plt.show()
+
+#     n_cols = 4
+#     n_rows = (len(probe_columns) + n_cols - 1) // n_cols
+#     fig, axes = plt.subplots(
+#         n_rows, n_cols, figsize=(20, 10), sharex=True, sharey=False
+#     )
+#     axes = axes.flatten()
+
+#     for i, column in enumerate(probe_columns):
+#         ax = axes[i]
+#         ax.plot(ground_truth_df[column], label=f"{column} (labels)", linewidth=1.0)
+#         ax.plot(
+#             predictions_df[column],
+#             label=f"{column} (predictions)",
+#             linewidth=1.0,
+#             linestyle="--",
+#         )
+#         ax.set_title(f"{column}")
+#         ax.legend()
+#         ax.grid(True)
+#         ax.set_xlim([400, 1000])
+
+#     for j in range(len(probe_columns), len(axes)):
+#         fig.delaxes(axes[j])
+
+#     plt.tight_layout()
+#     if save_dir:
+#         save_path = f"{save_dir}/{plot_name}_probe_columns_plot.png"
+#         plt.savefig(save_path, dpi=900)
+#         print(f"Probe columns plot saved to {save_path}")
+#     else:
+#         plt.show()
+
+
 def plot_selected_columns(labels_data, prediction_data, save_dir=None, plot_name=""):
     """
-    Plot selected columns ('Cd', 'Cl', and probe data) with subplots.
+    Plot selected columns ('Cd', 'Cl', and probe data) with subplots in a 3×4 grid row-wise.
 
     :param labels_data: Ground truth data (NumPy array or DataFrame).
     :param prediction_data: Predicted data (NumPy array or DataFrame).
@@ -38,39 +126,72 @@ def plot_selected_columns(labels_data, prediction_data, save_dir=None, plot_name
     columns = [
         "Cd",
         "Cl",
-        "p_probe_0",
-        "p_probe_1",
-        "p_probe_2",
-        "p_probe_3",
-        "p_probe_4",
-        "p_probe_5",
-        "p_probe_6",
-        "p_probe_7",
-        "p_probe_8",
-        "p_probe_9",
-        "p_probe_10",
-        "p_probe_11",
+        "probe_0",
+        "probe_1",
+        "probe_2",
+        "probe_3",
+        "probe_4",
+        "probe_5",
+        "probe_6",
+        "probe_7",
+        "probe_8",
+        "probe_9",
+        "probe_10",
+        "probe_11",
     ]
 
     ground_truth_df = pd.DataFrame(labels_data, columns=columns)
     predictions_df = pd.DataFrame(prediction_data, columns=columns)
 
-    cd_cl_columns = ["Cd", "Cl"]
-    probe_columns = [col for col in columns if col not in cd_cl_columns]
+    # Transform x-axis: Map 0 → 400 and 600 → 1000
+    x_original = np.linspace(0, 600, num=len(ground_truth_df))
+    x_transformed = np.linspace(400, 1000, num=len(ground_truth_df))
 
+    cd_cl_columns = ["Cd", "Cl"]
+    probe_columns = [
+        "probe_0",
+        "probe_3",
+        "probe_6",
+        "probe_9",
+        "probe_1",
+        "probe_4",
+        "probe_7",
+        "probe_10",
+        "probe_2",
+        "probe_5",
+        "probe_8",
+        "probe_11",
+    ]
+
+    # Plot Cd and Cl
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
     for i, column in enumerate(cd_cl_columns):
         ax = axes[i]
-        ax.plot(ground_truth_df[column], label=f"{column} (labels)", linewidth=1.0)
         ax.plot(
+            x_original,
+            ground_truth_df[column],
+            label=f"{column} (labels)",
+            linewidth=1.0,
+        )
+        ax.plot(
+            x_original,
             predictions_df[column],
             label=f"{column} (predictions)",
             linewidth=1.0,
             linestyle="--",
         )
+
         ax.set_title(f"{column}")
         ax.legend()
         ax.grid(True)
+
+        # Set transformed x-axis values
+        ax.set_xlim([0, 600])
+        ax.set_xticks(np.linspace(0, 600, num=7))
+        ax.set_xticklabels(np.linspace(400, 1000, num=7, dtype=int))
+
+        ax.set_xlabel("No. of Samples")
+        ax.set_ylabel("Values")
 
     plt.tight_layout()
     if save_dir:
@@ -80,28 +201,51 @@ def plot_selected_columns(labels_data, prediction_data, save_dir=None, plot_name
     else:
         plt.show()
 
-    n_cols = 4
-    n_rows = (len(probe_columns) + n_cols - 1) // n_cols
+    # Set up 3 rows × 4 columns grid for probe columns
+    n_rows, n_cols = 3, 4
     fig, axes = plt.subplots(
-        n_rows, n_cols, figsize=(20, 10), sharex=True, sharey=False
+        n_rows, n_cols, figsize=(20, 12), sharex=True, sharey=False
     )
-    axes = axes.flatten()
 
-    for i, column in enumerate(probe_columns):
-        ax = axes[i]
-        ax.plot(ground_truth_df[column], label=f"{column} (labels)", linewidth=1.0)
-        ax.plot(
-            predictions_df[column],
-            label=f"{column} (predictions)",
-            linewidth=1.0,
-            linestyle="--",
-        )
-        ax.set_title(f"{column}")
-        ax.legend()
-        ax.grid(True)
+    # Reshape axes to allow row-wise iteration
+    axes = axes.reshape(n_rows, n_cols)
 
-    for j in range(len(probe_columns), len(axes)):
-        fig.delaxes(axes[j])
+    probe_index = 0
+    for row in range(n_rows):
+        for col in range(n_cols):
+            if probe_index >= len(probe_columns):
+                fig.delaxes(axes[row, col])  # Remove empty subplots
+                continue
+
+            column = probe_columns[probe_index]
+            ax = axes[row, col]
+            ax.plot(
+                x_original,
+                ground_truth_df[column],
+                label=f"{column} (labels)",
+                linewidth=1.0,
+            )
+            ax.plot(
+                x_original,
+                predictions_df[column],
+                label=f"{column} (predictions)",
+                linewidth=1.0,
+                linestyle="--",
+            )
+
+            ax.set_title(f"{column}")
+            ax.legend()
+            ax.grid(True)
+
+            # Set transformed x-axis values
+            ax.set_xlim([0, 600])
+            ax.set_xticks(np.linspace(0, 600, num=7))
+            ax.set_xticklabels(np.linspace(400, 1000, num=7, dtype=int))
+
+            ax.set_xlabel("No. of Samples")
+            ax.set_ylabel("Values")
+
+            probe_index += 1
 
     plt.tight_layout()
     if save_dir:
@@ -110,6 +254,130 @@ def plot_selected_columns(labels_data, prediction_data, save_dir=None, plot_name
         print(f"Probe columns plot saved to {save_path}")
     else:
         plt.show()
+
+
+# def plot_selected_columns(labels_data, prediction_data, save_dir=None, plot_name=""):
+#     """
+#     Plot selected columns ('Cd', 'Cl', and probe data) with subplots.
+
+#     :param labels_data: Ground truth data (NumPy array or DataFrame).
+#     :param prediction_data: Predicted data (NumPy array or DataFrame).
+#     :param save_dir: Directory to save the plot. If None, the plot is displayed.
+#     :param plot_name: Name to include in the saved plot file.
+#     """
+#     columns = [
+#         "Cd",
+#         "Cl",
+#         "p_probe_0",
+#         "p_probe_1",
+#         "p_probe_2",
+#         "p_probe_3",
+#         "p_probe_4",
+#         "p_probe_5",
+#         "p_probe_6",
+#         "p_probe_7",
+#         "p_probe_8",
+#         "p_probe_9",
+#         "p_probe_10",
+#         "p_probe_11",
+#     ]
+
+#     ground_truth_df = pd.DataFrame(labels_data, columns=columns)
+#     predictions_df = pd.DataFrame(prediction_data, columns=columns)
+
+#     # Transform x-axis: Map 0 → 400 and 600 → 1000
+#     x_original = np.linspace(0, 600, num=len(ground_truth_df))
+#     x_transformed = np.linspace(400, 1000, num=len(ground_truth_df))
+
+#     cd_cl_columns = ["Cd", "Cl"]
+#     probe_columns = [col for col in columns if col not in cd_cl_columns]
+
+#     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+#     for i, column in enumerate(cd_cl_columns):
+#         ax = axes[i]
+#         ax.plot(
+#             x_original,
+#             ground_truth_df[column],
+#             label=f"{column} (labels)",
+#             linewidth=1.0,
+#         )
+#         ax.plot(
+#             x_original,
+#             predictions_df[column],
+#             label=f"{column} (predictions)",
+#             linewidth=1.0,
+#             linestyle="--",
+#         )
+
+#         ax.set_title(f"{column}")
+#         ax.legend()
+#         ax.grid(True)
+
+#         # Set transformed x-axis values
+#         ax.set_xlim([0, 600])
+#         ax.set_xticks(np.linspace(0, 600, num=7))  # Setting ticks at equal intervals
+#         ax.set_xticklabels(
+#             np.linspace(400, 1000, num=7, dtype=int)
+#         )  # Transforming labels
+
+#         ax.set_xlabel("No. of Samples")  # Naming x-axis
+#         ax.set_ylabel("Values")
+
+#     plt.tight_layout()
+#     if save_dir:
+#         save_path = f"{save_dir}/{plot_name}_cd_cl_plot.png"
+#         plt.savefig(save_path, dpi=900)
+#         print(f"'Cd' and 'Cl' plot saved to {save_path}")
+#     else:
+#         plt.show()
+
+#     n_cols = 4
+#     n_rows = (len(probe_columns) + n_cols - 1) // n_cols
+#     fig, axes = plt.subplots(
+#         n_rows, n_cols, figsize=(20, 10), sharex=True, sharey=False
+#     )
+#     axes = axes.flatten()
+
+#     for i, column in enumerate(probe_columns):
+#         ax = axes[i]
+#         ax.plot(
+#             x_original,
+#             ground_truth_df[column],
+#             label=f"{column} (labels)",
+#             linewidth=1.0,
+#         )
+#         ax.plot(
+#             x_original,
+#             predictions_df[column],
+#             label=f"{column} (predictions)",
+#             linewidth=1.0,
+#             linestyle="--",
+#         )
+
+#         ax.set_title(f"{column}")
+#         ax.legend()
+#         ax.grid(True)
+
+#         # Set transformed x-axis values
+#         ax.set_xlim([0, 600])
+#         ax.set_xticks(np.linspace(0, 600, num=7))  # Setting ticks at equal intervals
+#         ax.set_xticklabels(
+#             np.linspace(400, 1000, num=7, dtype=int)
+#         )  # Transforming labels
+
+#         ax.set_xlabel("No. of Samples")  # Naming x-axis
+#         ax.set_ylabel("Values")
+
+#     for j in range(len(probe_columns), len(axes)):
+#         fig.delaxes(axes[j])
+
+#     plt.tight_layout()
+#     if save_dir:
+#         save_path = f"{save_dir}/{plot_name}_probe_columns_plot.png"
+#         plt.savefig(save_path, dpi=900)
+#         print(f"Probe columns plot saved to {save_path}")
+#     else:
+#         plt.show()
 
 
 def compute_scaled_l2_loss_heatmap(labels_data, prediction_data, save_dir=None):
@@ -393,11 +661,148 @@ def plot_contour_frequency_amplitude_accuracy(frequency, amplitude, accuracy):
     plt.show()
 
 
+# def plot_contour_accuracy_for_features_array(
+#     frequency, amplitude, accuracies, save_dir=None, plot_name=""
+# ):
+#     """
+#     Plot contour accuracy plots for 'Cd', 'Cl', and probe data in separate figures.
+
+#     :param frequency: List or array of frequency values.
+#     :param amplitude: List or array of amplitude values.
+#     :param accuracies: List or array where each entry contains the accuracies for one feature.
+#     :param save_dir: Directory to save the plot. If None, the plot is displayed.
+#     :param plot_name: Name to include in the saved plot file.
+#     """
+#     # Convert frequency and amplitude to NumPy arrays if they are not already
+#     frequency = np.array(frequency)
+#     amplitude = np.array(amplitude)
+
+#     # Define feature names based on the given format
+#     feature_names = [
+#         "Cd",
+#         "Cl",
+#         "p_probe_0",
+#         "p_probe_1",
+#         "p_probe_2",
+#         "p_probe_3",
+#         "p_probe_4",
+#         "p_probe_5",
+#         "p_probe_6",
+#         "p_probe_7",
+#         "p_probe_8",
+#         "p_probe_9",
+#         "p_probe_10",
+#         "p_probe_11",
+#     ]
+
+#     # Validate that the number of features matches the given accuracies
+#     if len(accuracies) != len(feature_names):
+#         raise ValueError(
+#             f"The number of accuracy arrays ({len(accuracies)}) "
+#             f"does not match the expected number of features ({len(feature_names)})."
+#         )
+
+#     cd_cl_columns = ["Cd", "Cl"]
+#     probe_columns = [name for name in feature_names if name not in cd_cl_columns]
+
+#     # Map feature names to indices in the accuracies list
+#     feature_indices = {name: i for i, name in enumerate(feature_names)}
+
+#     # Plot Cd and Cl
+#     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+#     for i, column in enumerate(cd_cl_columns):
+#         ax = axes[i]
+
+#         # Extract accuracy for the current feature
+#         accuracy = np.array(accuracies[feature_indices[column]])
+#         points = np.column_stack((frequency, amplitude))
+#         grid_x, grid_y = np.meshgrid(
+#             np.linspace(frequency.min(), frequency.max(), 100),
+#             np.linspace(amplitude.min(), amplitude.max(), 100),
+#         )
+#         grid_accuracy = griddata(points, accuracy, (grid_x, grid_y), method="cubic")
+
+#         # Handle NaN in the interpolated grid
+#         if np.any(np.isnan(grid_accuracy)):
+#             print(
+#                 f"Warning: Some values in the grid for {column} are NaN. "
+#                 f"Adjusting interpolation method to 'linear'."
+#             )
+#             grid_accuracy = griddata(
+#                 points, accuracy, (grid_x, grid_y), method="linear"
+#             )
+
+#         contour = ax.contourf(grid_x, grid_y, grid_accuracy, levels=50, cmap="viridis")
+#         fig.colorbar(contour, ax=ax, label="Accuracy")
+#         ax.set_title(f"{column} Contour")
+#         ax.set_xlabel("Frequency")
+#         ax.set_ylabel("Amplitude")
+#         ax.grid(True)
+
+#     plt.tight_layout()
+#     if save_dir:
+#         save_path = f"{save_dir}/{plot_name}_cd_cl_contour.png"
+#         plt.savefig(save_path, dpi=900)
+#         print(f"'Cd' and 'Cl' contour plot saved to {save_path}")
+#     else:
+#         plt.show()
+
+#     # Plot Probe Columns
+#     n_cols = 4
+#     n_rows = (len(probe_columns) + n_cols - 1) // n_cols
+#     fig, axes = plt.subplots(
+#         n_rows, n_cols, figsize=(20, 10), sharex=True, sharey=False
+#     )
+#     axes = axes.flatten()
+
+#     for i, column in enumerate(probe_columns):
+#         ax = axes[i]
+
+#         # Extract accuracy for the current feature
+#         accuracy = np.array(accuracies[feature_indices[column]])
+#         points = np.column_stack((frequency, amplitude))
+#         grid_x, grid_y = np.meshgrid(
+#             np.linspace(frequency.min(), frequency.max(), 100),
+#             np.linspace(amplitude.min(), amplitude.max(), 100),
+#         )
+#         grid_accuracy = griddata(points, accuracy, (grid_x, grid_y), method="cubic")
+
+#         # Handle NaN in the interpolated grid
+#         if np.any(np.isnan(grid_accuracy)):
+#             print(
+#                 f"Warning: Some values in the grid for {column} are NaN. "
+#                 f"Adjusting interpolation method to 'linear'."
+#             )
+#             grid_accuracy = griddata(
+#                 points, accuracy, (grid_x, grid_y), method="linear"
+#             )
+
+#         contour = ax.contourf(grid_x, grid_y, grid_accuracy, levels=50, cmap="viridis")
+#         fig.colorbar(contour, ax=ax, label="Accuracy")
+#         ax.set_title(f"{column} Contour")
+#         ax.set_xlabel("Frequency")
+#         ax.set_ylabel("Amplitude")
+#         ax.grid(True)
+
+#     # Remove empty subplots
+#     for j in range(len(probe_columns), len(axes)):
+#         fig.delaxes(axes[j])
+
+#     plt.tight_layout()
+#     if save_dir:
+#         save_path = f"{save_dir}/{plot_name}_probe_contour.png"
+#         plt.savefig(save_path, dpi=900)
+#         print(f"Probe contour plot saved to {save_path}")
+#     else:
+#         plt.show()
+
+
 def plot_contour_accuracy_for_features_array(
     frequency, amplitude, accuracies, save_dir=None, plot_name=""
 ):
     """
     Plot contour accuracy plots for 'Cd', 'Cl', and probe data in separate figures.
+    Also overlays scatter points for given frequency and amplitude values.
 
     :param frequency: List or array of frequency values.
     :param amplitude: List or array of amplitude values.
@@ -409,7 +814,7 @@ def plot_contour_accuracy_for_features_array(
     frequency = np.array(frequency)
     amplitude = np.array(amplitude)
 
-    # Define feature names based on the given format
+    # Define feature names
     feature_names = [
         "Cd",
         "Cl",
@@ -427,17 +832,15 @@ def plot_contour_accuracy_for_features_array(
         "p_probe_11",
     ]
 
-    # Validate that the number of features matches the given accuracies
+    # Validate number of features
     if len(accuracies) != len(feature_names):
         raise ValueError(
-            f"The number of accuracy arrays ({len(accuracies)}) "
-            f"does not match the expected number of features ({len(feature_names)})."
+            f"The number of accuracy arrays ({len(accuracies)}) does not match "
+            f"the expected number of features ({len(feature_names)})."
         )
 
     cd_cl_columns = ["Cd", "Cl"]
     probe_columns = [name for name in feature_names if name not in cd_cl_columns]
-
-    # Map feature names to indices in the accuracies list
     feature_indices = {name: i for i, name in enumerate(feature_names)}
 
     # Plot Cd and Cl
@@ -445,30 +848,39 @@ def plot_contour_accuracy_for_features_array(
     for i, column in enumerate(cd_cl_columns):
         ax = axes[i]
 
-        # Extract accuracy for the current feature
+        # Extract accuracy data
         accuracy = np.array(accuracies[feature_indices[column]])
         points = np.column_stack((frequency, amplitude))
+
+        # Create grid
         grid_x, grid_y = np.meshgrid(
             np.linspace(frequency.min(), frequency.max(), 100),
             np.linspace(amplitude.min(), amplitude.max(), 100),
         )
+
+        # Interpolate accuracy values
         grid_accuracy = griddata(points, accuracy, (grid_x, grid_y), method="cubic")
 
-        # Handle NaN in the interpolated grid
+        # Handle NaN values in interpolation
         if np.any(np.isnan(grid_accuracy)):
             print(
-                f"Warning: Some values in the grid for {column} are NaN. "
-                f"Adjusting interpolation method to 'linear'."
+                f"Warning: Some values in the grid for {column} are NaN. Switching to 'linear'."
             )
             grid_accuracy = griddata(
                 points, accuracy, (grid_x, grid_y), method="linear"
             )
 
+        # Contour plot
         contour = ax.contourf(grid_x, grid_y, grid_accuracy, levels=50, cmap="viridis")
         fig.colorbar(contour, ax=ax, label="Accuracy")
+
+        # Scatter points (Red)
+        ax.scatter(frequency, amplitude, c="red", marker="o", s=10, label="Data Points")
+
         ax.set_title(f"{column} Contour")
         ax.set_xlabel("Frequency")
         ax.set_ylabel("Amplitude")
+        ax.legend()
         ax.grid(True)
 
     plt.tight_layout()
@@ -490,30 +902,39 @@ def plot_contour_accuracy_for_features_array(
     for i, column in enumerate(probe_columns):
         ax = axes[i]
 
-        # Extract accuracy for the current feature
+        # Extract accuracy data
         accuracy = np.array(accuracies[feature_indices[column]])
         points = np.column_stack((frequency, amplitude))
+
+        # Create grid
         grid_x, grid_y = np.meshgrid(
             np.linspace(frequency.min(), frequency.max(), 100),
             np.linspace(amplitude.min(), amplitude.max(), 100),
         )
+
+        # Interpolate accuracy values
         grid_accuracy = griddata(points, accuracy, (grid_x, grid_y), method="cubic")
 
-        # Handle NaN in the interpolated grid
+        # Handle NaN values in interpolation
         if np.any(np.isnan(grid_accuracy)):
             print(
-                f"Warning: Some values in the grid for {column} are NaN. "
-                f"Adjusting interpolation method to 'linear'."
+                f"Warning: Some values in the grid for {column} are NaN. Switching to 'linear'."
             )
             grid_accuracy = griddata(
                 points, accuracy, (grid_x, grid_y), method="linear"
             )
 
+        # Contour plot
         contour = ax.contourf(grid_x, grid_y, grid_accuracy, levels=50, cmap="viridis")
         fig.colorbar(contour, ax=ax, label="Accuracy")
+
+        # Scatter points (Red)
+        ax.scatter(frequency, amplitude, c="red", marker="o", s=10, label="Data Points")
+
         ax.set_title(f"{column} Contour")
         ax.set_xlabel("Frequency")
         ax.set_ylabel("Amplitude")
+        ax.legend()
         ax.grid(True)
 
     # Remove empty subplots
