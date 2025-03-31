@@ -73,65 +73,6 @@ cd Analysis-of-neural-network-architectures-for-predicting-time-series-data-from
   python main.py
   ```
 
-  ---
-
-## 📊 LSTM Model Results
-
-_(Embed actual image links in your repository to replace these placeholders)_
-
-### ✅ Training Loss
-
-![LSTM Loss](./results/LSTM/LSTM__30_loss_plot.png.png)
-
-### ✅ Cd & Cl Time-Series
-
-![LSTM Cd Cl](./results/LSTM/LSTM__30_cd_cl_plot.png.png)
-
-### ✅ Pressure Probes
-
-![LSTM Probes](./results/LSTM/LSTM__30_probe_columns_plot.PNG.png)
-
-### ✅ Cd/Cl Accuracy Contours
-
-![LSTM Contour](./results/LSTM/LSTM__30_cd_cl_contour.PNG.png)
-
-### ✅ Probe Accuracy Contours
-
-![LSTM Probe Contours](./results/LSTM/LSTM__30_probe_contour.PNG.png)
-
-### ✅ Global Accuracy Bar Plot
-
-![LSTM Error Bars](./results/LSTM/LSTM__prediction_accuracy_error_bars_scatter.png.png)
-
----
-
-## 📊 FCNN Model Results
-
-### ✅ Training Loss
-
-![FCNN Loss](./results/FCNN/FCNN__30_loss_plot.png.png)
-
-### ✅ Cd & Cl Time-Series
-
-![FCNN Cd Cl](./results/FCNN/FCNN__30_cd_cl_plot.png.png)
-
-### ✅ Pressure Probes
-
-![FCNN Probes](./results/FCNN/FCNN__30_probe_columns_plot.PNG.png)
-
-### ✅ Cd/Cl Accuracy Contours
-
-![FCNN Contour](./results/FCNN/FCNN__30_cd_cl_contour.png.png)
-
-### ✅ Probe Accuracy Contours
-
-![FCNN Probe Contours](./results/FCNN/FCNN__30_probe_contour.PNG.png)
-
-### ✅ Global Accuracy Bar Plot
-
-![FCNN Error Bars](./results/FCNN/FCNN__prediction_accuracy_error_bars_scatter.png.png)
-
----
 
 ## 🧠 Model Comparison Summary
 
